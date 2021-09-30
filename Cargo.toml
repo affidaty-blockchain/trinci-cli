@@ -1,0 +1,19 @@
+[package]
+name = "trinci-cli"
+version = "0.1.6"
+authors = ["The Affidaty Team <trinci@affidaty.io>"]
+edition = "2018"
+
+[dependencies]
+trinci-core = { git = "https://github.com/affidaty-blockchain/trinci-core", default-features = false }
+serde = { version = "1.0.126", features = [ "derive" ] }
+serde_json = "1.0.64"
+rmp-serde = "0.15.5"
+serde-value = { git = "https://github.com/affidaty-blockchain/serde-value", branch = "helper_macro" }
+hex = "0.4.3"
+rand = "0.8.4"
+clap = "2.33.3"
+ureq = { version = "2.1.1", default-features = false }
+lazy_static = "1.4.0"
+toml = "0.5.8"
+rustyline = "8.2.0"
