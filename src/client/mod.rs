@@ -268,7 +268,6 @@ impl Client {
         let req = Message::Subscribe {
             id: "cli".to_owned(),
             events,
-            packed: true,
         };
         self.send(req)?;
 
