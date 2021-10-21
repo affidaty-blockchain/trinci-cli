@@ -38,7 +38,8 @@ pub struct AccountInfo {
 fn create_keypair(pub_key: &str, pvt_key: &str) -> KeyPair {
     let public_bytes = hex::decode(pub_key).unwrap();
     let private_bytes = hex::decode(pvt_key).unwrap();
-    let ecdsa_keypair = ecdsa::KeyPair::new(&private_bytes, &public_bytes).unwrap();
+    let ecdsa_keypair =
+        ecdsa::KeyPair::new(ecdsa::CurveId::Secp384R1, &private_bytes, &public_bytes).unwrap();
     KeyPair::Ecdsa(ecdsa_keypair)
 }
 
