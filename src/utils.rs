@@ -121,6 +121,7 @@ pub fn load_ecdsa_secp384_keypair(keyfile: &str) -> KeyPair {
     let mut file = std::fs::File::open(keyfile).unwrap();
     let mut bytes = Vec::new();
     file.read_to_end(&mut bytes).expect("loading node keypair");
-    let ecdsa_keypair = ecdsa::KeyPair::from_pkcs8_bytes(&bytes).unwrap();
+    let ecdsa_keypair =
+        ecdsa::KeyPair::from_pkcs8_bytes(ecdsa::CurveId::Secp384R1, &bytes).unwrap();
     KeyPair::Ecdsa(ecdsa_keypair)
 }

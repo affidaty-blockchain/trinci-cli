@@ -1,0 +1,14 @@
+# Pre-built transactions batches.
+
+# Interactive batch execution.
+interactive = true
+
+# Register contracts
+
+[[batch.0]]
+desc = 'Register dynamic exchange contract'
+file = 'register-dynamic_exchange-0.2.0.bin'
+
+[[batch.0]]
+desc = 'Register withdraw contract'
+file = 'register-withdraw-0.1.0.bin'
