@@ -1,0 +1,13 @@
+# Pre-built transactions batches.
+
+# Interactive batch execution.
+interactive = true
+
+# Genesis block contains executed by built-in (offchain) bootstrap contract.
+
+[[batch.0]]
+desc = 'Register service contract'
+file = 'register-service-0.1.2.bin'
+
+# Register the contracts required to execute generic transactions.
+

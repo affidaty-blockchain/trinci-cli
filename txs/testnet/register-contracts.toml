@@ -1,0 +1,30 @@
+# Pre-built transactions batches.
+
+# Interactive batch execution.
+interactive = true
+
+# Register contracts
+[[batch.0]]
+desc = 'Register asset contract'
+file = 'register-asset-0.1.2.bin'
+
+[[batch.1]]
+desc = 'register escrow contract'
+file = 'register-escrow-0.2.3.bin'
+
+[[batch.2]]
+desc = 'Register dynamic exchange contract'
+file = 'register-dynamic-exchange-0.2.1.bin'
+
+[[batch.2]]
+desc = 'Register withdraw contract'
+file = 'register-withdraw-0.1.0.bin'
+
+[[batch.3]] 
+desc = 'Register basic vote contract'
+file = 'register-basic-vote-0.1.0.bin'
+
+[[batch.3]]
+desc = 'Register vote contract'
+file = 'register-vote-0.1.2.bin'
+
