@@ -137,3 +137,8 @@ To execute the batch transactions:
 ```bash
 $ cargo run -- --batch <file.toml> --host <host> --path <path> --port <port> --network <network>
 ```
+
+# Stress test
+This modality create N threads (where N is the parameter `<threads>` on the command) that perform a
+series of transfer on the targeted blockchain.
+It is used to valutate the node performance.
