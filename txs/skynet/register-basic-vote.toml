@@ -1,9 +1,0 @@
-# Pre-built transactions batches.
-
-# Interactive batch execution.
-interactive = true
-
-
-[[batch.0]]
-desc = 'Register basic vote contract'
-file = 'register-basic-vote-0.1.0.bin'
