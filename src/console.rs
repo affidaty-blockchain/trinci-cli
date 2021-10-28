@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with TRINCI. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::{cheats, client::Client, common::build_transaction, utils, impexp};
+use crate::{cheats, client::Client, common::build_transaction, impexp, utils};
 use trinci_core::{
     crypto::{Hash, KeyPair},
     Transaction,
@@ -42,8 +42,14 @@ fn help() {
     println!(" * '{} <tkt>': get receipt by transaction ticket", GET_RX);
     println!(" * '{} <id>': get account by id", GET_ACCOUNT);
     println!(" * '{} <height>': get block at a given height", GET_BLOCK);
-    println!(" * '{} <file>': export all transactions into a file", EXPORT_TXS);
-    println!(" * '{} <file>': import transactions from a file", IMPORT_TXS);
+    println!(
+        " * '{} <file>': export all transactions into a file",
+        EXPORT_TXS
+    );
+    println!(
+        " * '{} <file>': import transactions from a file",
+        IMPORT_TXS
+    );
     println!(" * '{}': shortcuts for common tasks", CHEATS);
     println!(" * '{}': exit the application", QUIT);
 }
@@ -161,9 +167,9 @@ pub fn run(mut client: Client) {
             EXPORT_TXS => {
                 let _file_name = match splitted.get(1) {
                     Some(file) => {
-                        println!("Exporting transaction -> {}",file);
-                        impexp::export_txs(file,&mut client);
-                    },
+                        println!("Exporting transaction -> {}", file);
+                        impexp::export_txs(file, &mut client);
+                    }
                     _ => {
                         println!("Insert a valid file name");
                     }
@@ -173,9 +179,9 @@ pub fn run(mut client: Client) {
             IMPORT_TXS => {
                 let _file_name = match splitted.get(1) {
                     Some(file) => {
-                        println!("Importing transaction from {} ",file);
-                        impexp::import_txs(file,&mut client);
-                    },
+                        println!("Importing transaction from {} ", file);
+                        impexp::import_txs(file, &mut client);
+                    }
                     _ => {
                         println!("Insert a valid file name");
                     }

@@ -115,7 +115,7 @@ impl Client {
         }
     }
 
-    pub fn get_block(&mut self, height: u64) -> Option<(Block,Vec<Hash>)> {
+    pub fn get_block(&mut self, height: u64) -> Option<(Block, Vec<Hash>)> {
         match self.get_block_err(height) {
             Ok(tblock) => Some(tblock),
             Err(err) => {
@@ -219,7 +219,10 @@ impl Client {
         }
     }
 
-    pub fn get_block_err(&mut self, height: u64) -> Result<(Block,Vec<Hash>), Box<dyn std::error::Error>> {
+    pub fn get_block_err(
+        &mut self,
+        height: u64,
+    ) -> Result<(Block, Vec<Hash>), Box<dyn std::error::Error>> {
         let req = Message::GetBlockRequest { height, txs: true };
         let result = match self.send_recv(req)? {
             Message::GetBlockResponse { block, txs } => {
@@ -230,7 +233,7 @@ impl Client {
                         utils::print_serializable(&txs);
                     }
                 }
-                Ok((block,txs.unwrap_or_default()))
+                Ok((block, txs.unwrap_or_default()))
             }
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
