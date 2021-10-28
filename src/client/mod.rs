@@ -115,9 +115,9 @@ impl Client {
         }
     }
 
-    pub fn get_block(&mut self, height: u64) -> Option<Block> {
+    pub fn get_block(&mut self, height: u64) -> Option<(Block,Vec<Hash>)> {
         match self.get_block_err(height) {
-            Ok(block) => Some(block),
+            Ok(tblock) => Some(tblock),
             Err(err) => {
                 eprintln!("Error: {}", err.to_string());
                 None
@@ -169,7 +169,9 @@ impl Client {
         let req = Message::PutTransactionRequest { confirm: true, tx };
         match self.send_recv(req)? {
             Message::PutTransactionResponse { hash } => {
-                utils::print_serializable(&hash);
+                if self.verbose {
+                    utils::print_serializable(&hash);
+                }
                 Ok(hash)
             }
             Message::Exception(err) => {
@@ -187,7 +189,9 @@ impl Client {
         let req = Message::GetTransactionRequest { hash };
         match self.send_recv(req)? {
             Message::GetTransactionResponse { tx } => {
-                utils::print_serializable(&tx);
+                if self.verbose {
+                    utils::print_serializable(&tx);
+                }
                 Ok(tx)
             }
             Message::Exception(err) => {
@@ -202,7 +206,9 @@ impl Client {
         let req = Message::GetReceiptRequest { hash };
         match self.send_recv(req)? {
             Message::GetReceiptResponse { rx } => {
-                utils::print_serializable(&rx);
+                if self.verbose {
+                    utils::print_serializable(&rx);
+                }
                 Ok(rx)
             }
             Message::Exception(err) => {
@@ -213,15 +219,18 @@ impl Client {
         }
     }
 
-    pub fn get_block_err(&mut self, height: u64) -> Result<Block, Box<dyn std::error::Error>> {
+    pub fn get_block_err(&mut self, height: u64) -> Result<(Block,Vec<Hash>), Box<dyn std::error::Error>> {
         let req = Message::GetBlockRequest { height, txs: true };
         let result = match self.send_recv(req)? {
             Message::GetBlockResponse { block, txs } => {
-                utils::print_serializable(&block);
-                if let Some(txs) = txs {
-                    utils::print_serializable(&txs);
+                if self.verbose {
+                    utils::print_serializable(&block);
+
+                    if let Some(ref txs) = txs {
+                        utils::print_serializable(&txs);
+                    }
                 }
-                Ok(block)
+                Ok((block,txs.unwrap_or_default()))
             }
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
