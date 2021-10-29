@@ -12,8 +12,7 @@ fn export_txs_from_block(txs: Vec<Hash>, client: &mut Client, file: &mut File) {
         let tx = client.get_transaction(*htx).unwrap();
         let buf = serialize::rmp_serialize(&tx).expect("Error during serialization's transaction");
         file.write_all(&buf).expect("Unable to write file...");
-        file.write("\n".as_bytes())
-            .expect("Unable to write file...");
+        file.write_all("\n".as_bytes()).expect("Unable to write file...");
 
         //println!("TX: {:?}",buf);
     });
@@ -29,7 +28,7 @@ pub fn export_txs(file_name: &str, client: &mut Client) {
         Err(why) => panic!("couldn't create {}: {}", display, why),
         Ok(file) => file,
     };
-    let bar = ProgressBar::new(last_block.clone());
+    let bar = ProgressBar::new(last_block);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:40.cyan/blue}  {msg}")
