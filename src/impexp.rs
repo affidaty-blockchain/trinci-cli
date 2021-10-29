@@ -12,7 +12,8 @@ fn export_txs_from_block(txs: Vec<Hash>, client: &mut Client, file: &mut File) {
         let tx = client.get_transaction(*htx).unwrap();
         let buf = serialize::rmp_serialize(&tx).expect("Error during serialization's transaction");
         file.write_all(&buf).expect("Unable to write file...");
-        file.write_all("\n".as_bytes()).expect("Unable to write file...");
+        file.write_all("\n".as_bytes())
+            .expect("Unable to write file...");
 
         //println!("TX: {:?}",buf);
     });
