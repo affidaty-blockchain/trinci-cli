@@ -4,11 +4,14 @@
 interactive = true
 
 # Register contracts
-
 [[batch.0]]
-desc = 'Register dynamic exchange contract'
-file = 'register-dynamic_exchange-0.2.0.bin'
+desc = 'Register asset contract'
+file = 'register-asset-0.1.2.bin'
 
-[[batch.0]]
-desc = 'Register withdraw contract'
-file = 'register-withdraw-0.1.0.bin'
+[[batch.1]]
+desc = 'init asset'
+file = 'asset-init.bin'
+
+[[batch.1]]
+desc = 'register escrow contract'
+file = 'register-escrow-0.2.3.bin'
