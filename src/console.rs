@@ -34,7 +34,7 @@ const CHEATS: &str = "cheats";
 
 fn help() {
     println!("Available commands:");
-    println!(" * '{}': pr-nt this help", HELP);
+    println!(" * '{}': print this help", HELP);
     println!(" * '{}': submit a transaction and get ticket", PUT_TX);
     println!(" * '{} <tkt>': get transaction by ticket", GET_TX);
     println!(" * '{} <tkt>': get receipt by transaction ticket", GET_RX);
