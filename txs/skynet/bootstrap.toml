@@ -7,20 +7,7 @@ interactive = true
 
 [[batch.0]]
 desc = 'Register service contract'
-file = 'register-service-0.1.1.bin'
+file = 'register-service-0.1.2.bin'
 
 # Register the contracts required to execute generic transactions.
 
-[[batch.1]]
-desc = 'Register asset contract'
-file = 'register-asset-0.2.3.bin'
-
-[[batch.1]]
-desc = 'Register escrow contract'
-file = 'register-escrow-0.2.2.bin'
-
-## Extra transactions
-
-[[batch.2]]
-desc = 'Asset initialize'
-file = 'asset-init.bin'
