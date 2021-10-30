@@ -85,39 +85,97 @@ impl Client {
         Self::new(chan, verbose, network, keypair)
     }
 
+    pub fn put_transaction_verb(&mut self, tx: Transaction) -> Option<Hash> {
+        let prev_verbose = self.verbose;
+        self.verbose = true;
+        let res = self.put_transaction(tx);
+        self.verbose = prev_verbose;
+        res
+    }
+
     pub fn put_transaction(&mut self, tx: Transaction) -> Option<Hash> {
+        if self.verbose {
+            utils::print_serializable(&tx);
+        }
         match self.put_transaction_err(tx) {
-            Ok(hash) => Some(hash),
+            Ok(hash) => {
+                if self.verbose {
+                    utils::print_serializable(&hash);
+                }
+                Some(hash)
+            }
             Err(err) => {
                 eprintln!("Error: {}", err.to_string());
                 None
             }
         }
+    }
+
+    pub fn get_transaction_verb(&mut self, hash: Hash) -> Option<Transaction> {
+        let prev_verbose = self.verbose;
+        self.verbose = true;
+        let res = self.get_transaction(hash);
+        self.verbose = prev_verbose;
+        res
     }
 
     pub fn get_transaction(&mut self, hash: Hash) -> Option<Transaction> {
         match self.get_transaction_err(hash) {
-            Ok(tx) => Some(tx),
+            Ok(tx) => {
+                if self.verbose {
+                    utils::print_serializable(&tx);
+                }
+                Some(tx)
+            }
             Err(err) => {
                 eprintln!("Error: {}", err.to_string());
                 None
             }
         }
+    }
+
+    pub fn get_receipt_verb(&mut self, hash: Hash) -> Option<Receipt> {
+        let prev_verbose = self.verbose;
+        self.verbose = true;
+        let res = self.get_receipt(hash);
+        self.verbose = prev_verbose;
+        res
     }
 
     pub fn get_receipt(&mut self, hash: Hash) -> Option<Receipt> {
         match self.get_receipt_err(hash) {
-            Ok(rx) => Some(rx),
+            Ok(rx) => {
+                if self.verbose {
+                    utils::print_serializable(&rx);
+                }
+                Some(rx)
+            }
             Err(err) => {
                 eprintln!("Error: {}", err.to_string());
                 None
             }
         }
+    }
+
+    pub fn get_block_verb(&mut self, height: u64) -> Option<(Block, Vec<Hash>)> {
+        let prev_verbose = self.verbose;
+        self.verbose = true;
+        let res = self.get_block(height);
+        self.verbose = prev_verbose;
+        res
     }
 
     pub fn get_block(&mut self, height: u64) -> Option<(Block, Vec<Hash>)> {
         match self.get_block_err(height) {
-            Ok(tblock) => Some(tblock),
+            Ok((block, txs)) => {
+                if self.verbose {
+                    utils::print_serializable(&block);
+                    if txs.len() > 0 {
+                        utils::print_serializable(&txs);
+                    }
+                }
+                Some((block, txs))
+            }
             Err(err) => {
                 eprintln!("Error: {}", err.to_string());
                 None
@@ -125,9 +183,34 @@ impl Client {
         }
     }
 
+    pub fn get_account_verb(&mut self, id: String) -> Option<Account> {
+        let prev_verbose = self.verbose;
+        self.verbose = true;
+        let res = self.get_account(id);
+        self.verbose = prev_verbose;
+        res
+    }
+
     pub fn get_account(&mut self, id: String) -> Option<Account> {
         match self.get_account_err(id) {
-            Ok(acc) => Some(acc),
+            Ok((acc, data)) => {
+                if self.verbose {
+                    if data.is_empty() {
+                        utils::print_serializable(&acc);
+                    } else {
+                        match data[0].as_ref() {
+                            Some(buf) => {
+                                let data: Value = rmp_deserialize(buf).unwrap();
+                                utils::print_serializable(&data);
+                            }
+                            None => {
+                                println!("NULL");
+                            }
+                        }
+                    }
+                }
+                Some(acc)
+            }
             Err(err) => {
                 eprintln!("Error: {}", err.to_string());
                 None
@@ -162,18 +245,9 @@ impl Client {
         &mut self,
         tx: Transaction,
     ) -> Result<Hash, Box<dyn std::error::Error>> {
-        if self.verbose {
-            utils::print_serializable(&tx);
-        }
-
         let req = Message::PutTransactionRequest { confirm: true, tx };
         match self.send_recv(req)? {
-            Message::PutTransactionResponse { hash } => {
-                if self.verbose {
-                    utils::print_serializable(&hash);
-                }
-                Ok(hash)
-            }
+            Message::PutTransactionResponse { hash } => Ok(hash),
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
                 Err(err)
@@ -188,12 +262,7 @@ impl Client {
     ) -> Result<Transaction, Box<dyn std::error::Error>> {
         let req = Message::GetTransactionRequest { hash };
         match self.send_recv(req)? {
-            Message::GetTransactionResponse { tx } => {
-                if self.verbose {
-                    utils::print_serializable(&tx);
-                }
-                Ok(tx)
-            }
+            Message::GetTransactionResponse { tx } => Ok(tx),
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
                 Err(err)
@@ -205,12 +274,7 @@ impl Client {
     pub fn get_receipt_err(&mut self, hash: Hash) -> Result<Receipt, Box<dyn std::error::Error>> {
         let req = Message::GetReceiptRequest { hash };
         match self.send_recv(req)? {
-            Message::GetReceiptResponse { rx } => {
-                if self.verbose {
-                    utils::print_serializable(&rx);
-                }
-                Ok(rx)
-            }
+            Message::GetReceiptResponse { rx } => Ok(rx),
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
                 Err(err)
@@ -225,16 +289,7 @@ impl Client {
     ) -> Result<(Block, Vec<Hash>), Box<dyn std::error::Error>> {
         let req = Message::GetBlockRequest { height, txs: true };
         let result = match self.send_recv(req)? {
-            Message::GetBlockResponse { block, txs } => {
-                if self.verbose {
-                    utils::print_serializable(&block);
-
-                    if let Some(ref txs) = txs {
-                        utils::print_serializable(&txs);
-                    }
-                }
-                Ok((block, txs.unwrap_or_default()))
-            }
+            Message::GetBlockResponse { block, txs } => Ok((block, txs.unwrap_or_default())),
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
                 Err(err)
@@ -244,29 +299,17 @@ impl Client {
         result
     }
 
-    pub fn get_account_err(&mut self, id: String) -> Result<Account, Box<dyn std::error::Error>> {
+    pub fn get_account_err(
+        &mut self,
+        id: String,
+    ) -> Result<(Account, Vec<Option<Vec<u8>>>), Box<dyn std::error::Error>> {
         let (id, data) = match id.split_once(':') {
             Some((id, key)) => (id.to_owned(), vec![key.to_owned()]),
             None => (id, vec![]),
         };
         let req = Message::GetAccountRequest { id, data };
         match self.send_recv(req)? {
-            Message::GetAccountResponse { acc, data } => {
-                if data.is_empty() {
-                    utils::print_serializable(&acc);
-                } else {
-                    match data[0].as_ref() {
-                        Some(buf) => {
-                            let data: Value = rmp_deserialize(buf).unwrap();
-                            utils::print_serializable(&data);
-                        }
-                        None => {
-                            println!("NULL");
-                        }
-                    }
-                }
-                Ok(acc)
-            }
+            Message::GetAccountResponse { acc, data } => Ok((acc, data)),
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
                 Err(err)
