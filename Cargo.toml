@@ -1,7 +1,7 @@
 [package]
 name = "trinci-cli"
-version = "0.1.6"
-authors = ["The Affidaty Team <trinci@affidaty.io>"]
+version = "0.1.7"
+authors = ["The Trinci Team <trinci@affidaty.io>"]
 edition = "2018"
 
 [dependencies]
@@ -17,3 +17,4 @@ ureq = { version = "2.1.1", default-features = false }
 lazy_static = "1.4.0"
 toml = "0.5.8"
 rustyline = "8.2.0"
+indicatif = "0.16.2"
