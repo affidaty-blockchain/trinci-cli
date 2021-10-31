@@ -119,10 +119,10 @@ pub fn import_txs(file_name: &str, client: &mut Client) {
         };
         let mut hashes = vec![];
         for tx in file_blk.txs {
-            let hash = client
-                .put_transaction(tx)
-                .expect("None hash sending transaction");
-            hashes.push(hash);
+            match client.put_transaction(tx) {
+                Some(hash) => hashes.push(hash),
+                None => ()
+            };
         }
         // Wait for block execution
         for hash in hashes {
