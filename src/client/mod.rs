@@ -89,7 +89,7 @@ impl Client {
         match self.put_transaction_err(tx) {
             Ok(hash) => Some(hash),
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -99,7 +99,7 @@ impl Client {
         match self.get_transaction_err(hash) {
             Ok(tx) => Some(tx),
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -109,7 +109,7 @@ impl Client {
         match self.get_receipt_err(hash) {
             Ok(rx) => Some(rx),
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -119,7 +119,7 @@ impl Client {
         match self.get_block_err(height) {
             Ok(tblock) => Some(tblock),
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -129,7 +129,7 @@ impl Client {
         match self.get_account_err(id) {
             Ok(acc) => Some(acc),
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -137,7 +137,7 @@ impl Client {
 
     pub fn subscribe(&mut self) {
         if let Err(err) = self.subscribe_err() {
-            eprintln!("Error: {}", err.to_string());
+            eprintln!("Error: {}", err);
         }
     }
 
