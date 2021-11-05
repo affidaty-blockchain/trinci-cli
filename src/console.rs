@@ -122,7 +122,7 @@ pub fn run(mut client: Client) {
         match command {
             PUT_TX => {
                 let tx = build_transaction_interactive(&client.keypair);
-                client.put_transaction(tx);
+                client.put_transaction_verb(tx);
             }
             GET_TX => {
                 let hash = match splitted.get(1).and_then(|s| Hash::from_hex(s).ok()) {
@@ -132,7 +132,7 @@ pub fn run(mut client: Client) {
                         continue;
                     }
                 };
-                client.get_transaction(hash);
+                client.get_transaction_verb(hash);
             }
             GET_RX => {
                 let hash = match splitted.get(1).and_then(|s| Hash::from_hex(s).ok()) {
@@ -142,7 +142,7 @@ pub fn run(mut client: Client) {
                         continue;
                     }
                 };
-                client.get_receipt(hash);
+                client.get_receipt_verb(hash);
             }
             GET_ACCOUNT => {
                 let id = match splitted.get(1) {
@@ -152,7 +152,7 @@ pub fn run(mut client: Client) {
                         continue;
                     }
                 };
-                client.get_account(id.to_owned());
+                client.get_account_verb(id.to_owned());
             }
             GET_BLOCK => {
                 let height = match splitted.get(1).and_then(|s| s.parse::<u64>().ok()) {
@@ -162,7 +162,7 @@ pub fn run(mut client: Client) {
                         continue;
                     }
                 };
-                client.get_block(height);
+                client.get_block_verb(height);
             }
             EXPORT_TXS => {
                 let _file_name = match splitted.get(1) {
