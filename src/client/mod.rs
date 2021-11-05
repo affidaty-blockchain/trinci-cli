@@ -105,7 +105,7 @@ impl Client {
                 Some(hash)
             }
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -128,7 +128,7 @@ impl Client {
                 Some(tx)
             }
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -151,7 +151,7 @@ impl Client {
                 Some(rx)
             }
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -177,7 +177,7 @@ impl Client {
                 Some((block, txs))
             }
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -212,7 +212,7 @@ impl Client {
                 Some(acc)
             }
             Err(err) => {
-                eprintln!("Error: {}", err.to_string());
+                eprintln!("Error: {}", err);
                 None
             }
         }
@@ -220,7 +220,7 @@ impl Client {
 
     pub fn subscribe(&mut self) {
         if let Err(err) = self.subscribe_err() {
-            eprintln!("Error: {}", err.to_string());
+            eprintln!("Error: {}", err);
         }
     }
 

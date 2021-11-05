@@ -48,7 +48,7 @@ impl ClientChannel for HttpChannel {
                 self.res = Some(Err(msg.to_string()));
                 Ok(())
             }
-            Err(err) => Err(format!("POST error {}", err.to_string()).into()),
+            Err(err) => Err(format!("POST error {}", err).into()),
         }
     }
 
