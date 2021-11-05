@@ -170,7 +170,7 @@ impl Client {
             Ok((block, txs)) => {
                 if self.verbose {
                     utils::print_serializable(&block);
-                    if txs.len() > 0 {
+                    if !txs.is_empty(){
                         utils::print_serializable(&txs);
                     }
                 }
