@@ -84,11 +84,13 @@ pub fn build_transaction(
     let data = TransactionData {
         network,
         account,
+        fuel_limit: 0,
         nonce,
         contract,
         method,
         caller: caller.public_key(),
         args,
+        schema: "my-cool-schema".to_string(),
     };
     let bytes = data.serialize();
     let signature = caller.sign(&bytes).unwrap();
