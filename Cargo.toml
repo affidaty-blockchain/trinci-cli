@@ -1,8 +1,8 @@
 [package]
 name = "trinci-cli"
-version = "0.1.8"
+version = "0.1.9"
 authors = ["The Trinci Team <trinci@affidaty.io>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 trinci-core = { git = "https://github.com/affidaty-blockchain/trinci-core", default-features = false , features = [ "tpm2" ]}
