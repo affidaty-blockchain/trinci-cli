@@ -7,7 +7,7 @@ interactive = true
 
 [[batch.0]]
 desc = 'Register service contract'
-file = 'register-service-0.1.2.bin'
+file = 'register-service-0.1.3.bin'
 
 # Register the contracts required to execute generic transactions.
 
