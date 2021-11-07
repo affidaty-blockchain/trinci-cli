@@ -12,6 +12,3 @@ file = 'register-asset-0.1.2.bin'
 desc = 'init asset'
 file = 'asset-init.bin'
 
-[[batch.1]]
-desc = 'register escrow contract'
-file = 'register-escrow-0.2.3.bin'
