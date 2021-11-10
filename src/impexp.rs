@@ -1,6 +1,6 @@
 use crate::client::Client;
 use indicatif::{ProgressBar, ProgressStyle};
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{fs::File, io::Read, io::Write};
 use trinci_core::{
     base::serialize::{rmp_deserialize, rmp_serialize},
@@ -119,17 +119,16 @@ pub fn import_txs(file_name: &str, client: &mut Client) {
         };
         let mut hashes = vec![];
         for tx in file_blk.txs {
-            match client.put_transaction(tx) {
-                Some(hash) => hashes.push(hash),
-                None => ()
-            };
+            if let Some(hash) = client.put_transaction(tx) {
+                hashes.push(hash)
+            }
         }
         // Wait for block execution
         for hash in hashes {
             let mut trials = 10;
             // Use `get_receipt_err` to prevent printing temporary "not found" errors
             // while we're waiting for tx execution.
-            while let Err(_) = client.get_receipt_err(hash) {
+            while client.get_receipt_err(hash).is_err() {
                 if trials == 0 {
                     panic!(
                         "Error waiting for tx execution (hash: {}, block: {})",

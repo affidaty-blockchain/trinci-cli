@@ -170,7 +170,7 @@ impl Client {
             Ok((block, txs)) => {
                 if self.verbose {
                     utils::print_serializable(&block);
-                    if !txs.is_empty(){
+                    if !txs.is_empty() {
                         utils::print_serializable(&txs);
                     }
                 }
@@ -298,7 +298,7 @@ impl Client {
         };
         result
     }
-
+    #[allow(clippy::type_complexity)]
     pub fn get_account_err(
         &mut self,
         id: String,
