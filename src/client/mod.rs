@@ -319,7 +319,8 @@ impl Client {
     }
 
     pub fn subscribe_err(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let events = Event::BLOCK | Event::TRANSACTION;
+        let events = Event::CONTRACT_EVENTS | Event::BLOCK | Event::TRANSACTION;
+
         let req = Message::Subscribe {
             id: "cli".to_owned(),
             events,
@@ -329,7 +330,6 @@ impl Client {
         while let Ok(msg) = self.recv() {
             utils::print_serializable(&msg);
         }
-
         println!("Subscription over");
 
         Ok(())
