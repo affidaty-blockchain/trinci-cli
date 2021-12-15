@@ -19,10 +19,13 @@ use lazy_static::lazy_static;
 use std::sync::Mutex;
 use trinci_core::{
     self,
-    base::serialize::MessagePack,
+    base::{
+        schema::{SignedTransaction, TransactionData},
+        serialize::MessagePack,
+    },
     crypto::Hash,
     crypto::{ecdsa, KeyPair},
-    Transaction, TransactionData,
+    Transaction, TransactionDataV1,
 };
 
 lazy_static! {
@@ -81,7 +84,7 @@ pub fn build_transaction(
     args: Vec<u8>,
 ) -> Transaction {
     let nonce = rand::random::<u64>().to_be_bytes().to_vec();
-    let data = TransactionData {
+    let data = TransactionDataV1 {
         network,
         account,
         fuel_limit: 0,
@@ -94,5 +97,8 @@ pub fn build_transaction(
     };
     let bytes = data.serialize();
     let signature = caller.sign(&bytes).unwrap();
-    Transaction { data, signature }
+    Transaction::UnitTransaction(SignedTransaction {
+        data: TransactionData::V1(data),
+        signature,
+    })
 }
