@@ -60,7 +60,7 @@ pub fn export_txs(file_name: &str, client: &mut Client) {
         Err(why) => panic!("couldn't create {}: {}", file_name, why),
         Ok(file) => file,
     };
-    let bar = ProgressBar::new(last_block.height);
+    let bar = ProgressBar::new(last_block.data.height);
     bar.set_style(
         ProgressStyle::default_bar()
             .template("[{elapsed_precise}] {bar:40.cyan/blue}  {msg}")
@@ -69,11 +69,11 @@ pub fn export_txs(file_name: &str, client: &mut Client) {
 
     let head = FileHeader {
         magic: MAGIC,
-        num_blocks: last_block.height + 1,
+        num_blocks: last_block.data.height + 1,
     };
     write_to_file(&mut file, head);
 
-    for i in 0..=last_block.height {
+    for i in 0..=last_block.data.height {
         let (_block, tx_hashes) = client.get_block(i).unwrap();
         //print!("Block: {:?}",block);
 
@@ -86,12 +86,15 @@ pub fn export_txs(file_name: &str, client: &mut Client) {
         let file_blk = FileBlock { height: i, txs };
         write_to_file(&mut file, file_blk);
 
-        bar.set_message(format!("blocks: {}/{}", i + 1, last_block.height + 1));
+        bar.set_message(format!("blocks: {}/{}", i + 1, last_block.data.height + 1));
         bar.inc(1);
     }
     bar.finish();
     println!("All transaction exported to '{}'", file_name);
-    println!("Final state hash: '{}'", hex::encode(last_block.state_hash));
+    println!(
+        "Final state hash: '{}'",
+        hex::encode(last_block.data.state_hash)
+    );
 }
 
 pub fn import_txs(file_name: &str, client: &mut Client) {
@@ -147,13 +150,16 @@ pub fn import_txs(file_name: &str, client: &mut Client) {
     bar.finish();
 
     let (last_block, _) = client.get_block(u64::MAX).expect("No block");
-    if last_block.height + 1 != head.num_blocks {
+    if last_block.data.height + 1 != head.num_blocks {
         println!(
             "Warning: number of blocks differ from the original one (produced: {}, expected {})",
-            last_block.height + 1,
+            last_block.data.height + 1,
             head.num_blocks
         );
     }
     println!("All transaction imported from '{}'", file_name);
-    println!("Final state hash: '{}'", hex::encode(last_block.state_hash));
+    println!(
+        "Final state hash: '{}'",
+        hex::encode(last_block.data.state_hash)
+    );
 }
