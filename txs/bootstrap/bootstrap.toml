@@ -11,7 +11,7 @@ file = 'init-bootstrap.bin'
 
 # Register the contracts required to execute generic transactions.
 
-[[batch.1]]
-desc = 'init asset'
-file = 'register-asset.bin'
+#[[batch.1]]
+#desc = 'init asset'
+#file = 'register-asset.bin'
 

@@ -78,11 +78,22 @@ fn build_transaction_interactive(caller: &KeyPair) -> Transaction {
     utils::print_unbuf("  Method: ");
     let method = utils::get_input();
 
-    utils::print_unbuf("  Args (hex string): ");
-    let args = utils::get_input();
-    let args = match hex::decode(&args) {
-        Ok(buf) => buf,
-        Err(err) => panic!("Error: {}", err),
+    utils::print_unbuf("  Args (hex string)\n\tuse `path:<fullpath>` to load args from file: ");
+
+    let input_args = utils::get_input();
+
+    let args = if input_args.starts_with("path:") {
+        let filename = input_args.replace("path:", "");
+        let mut bootstrap_file = std::fs::File::open(filename).expect("bootstrap file not found");
+
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut bootstrap_file, &mut buf).expect("loading bootstrap");
+        buf
+    } else {
+        match hex::decode(&input_args) {
+            Ok(buf) => buf,
+            Err(err) => panic!("Error: {}", err),
+        }
     };
 
     build_transaction(caller, network, target, contract, method, args)
