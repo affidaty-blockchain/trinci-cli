@@ -93,7 +93,6 @@ pub fn build_transaction(
         method,
         caller: caller.public_key(),
         args,
-        schema: "my-cool-schema".to_string(),
     };
     let bytes = data.serialize();
     let signature = caller.sign(&bytes).unwrap();
