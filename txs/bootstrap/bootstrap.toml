@@ -6,12 +6,10 @@ interactive = true
 # Genesis block contains executed by built-in (offchain) bootstrap contract.
 
 [[batch.0]]
-desc = 'init bootstrap'
-file = 'init-bootstrap.bin'
+#desc = 'init bootstrap'
+#file = 'init-bootstrap.bin'
 
-# Register the contracts required to execute generic transactions.
-
-#[[batch.1]]
-#desc = 'init asset'
-#file = 'register-asset.bin'
+#[[batch.0]]
+#desc = 'add validator'
+#file = 'add-validator.bin'
 
