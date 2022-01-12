@@ -56,6 +56,7 @@ pub fn register_contract_tx(
     description: String,
     url: String,
     bin: Vec<u8>,
+    fuel_limit: u64,
 ) -> Transaction {
     let args = value!({
         "name": name,
@@ -72,6 +73,7 @@ pub fn register_contract_tx(
         service_contract,
         "contract_registration".to_owned(),
         args,
+        fuel_limit,
     )
 }
 
@@ -81,6 +83,9 @@ fn register_contract(client: &mut Client) {
 
     utils::print_unbuf("  Service contract (optional multihash hex string): ");
     let service_contract = utils::read_hash();
+
+    utils::print_unbuf("  Fuel Limit: ");
+    let fuel_limit = utils::get_input().parse::<u64>().unwrap();
 
     utils::print_unbuf("  New contract name: ");
     let name = utils::get_input();
@@ -108,6 +113,7 @@ fn register_contract(client: &mut Client) {
         description,
         url,
         bin,
+        fuel_limit,
     );
     client.put_transaction(tx);
 }
@@ -137,6 +143,7 @@ pub fn transfer_asset_tx(
         None,
         "transfer".to_owned(),
         args,
+        1_000_000,
     )
 }
 
@@ -187,6 +194,7 @@ fn asset_init_tx(
         asset_contract,
         "init".to_owned(),
         args,
+        1_000_000,
     )
 }
 

@@ -75,6 +75,9 @@ fn build_transaction_interactive(caller: &KeyPair) -> Transaction {
         }
     };
 
+    utils::print_unbuf("  Fuel Limit: ");
+    let fuel_limit = utils::get_input().parse::<u64>().unwrap();
+
     utils::print_unbuf("  Method: ");
     let method = utils::get_input();
 
@@ -96,7 +99,7 @@ fn build_transaction_interactive(caller: &KeyPair) -> Transaction {
         }
     };
 
-    build_transaction(caller, network, target, contract, method, args)
+    build_transaction(caller, network, target, contract, method, args, fuel_limit)
 }
 
 pub fn run(mut client: Client) {
