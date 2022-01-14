@@ -94,10 +94,8 @@ pub fn build_transaction(
         caller: caller.public_key(),
         args,
     };
+    let data = TransactionData::V1(data);
     let bytes = data.serialize();
     let signature = caller.sign(&bytes).unwrap();
-    Transaction::UnitTransaction(SignedTransaction {
-        data: TransactionData::V1(data),
-        signature,
-    })
+    Transaction::UnitTransaction(SignedTransaction { data, signature })
 }
