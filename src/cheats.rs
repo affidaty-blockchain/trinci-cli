@@ -103,6 +103,7 @@ pub fn create_service_init_tx(
         Some(hash),
         "init".to_owned(),
         bin,
+        100000,
     )
 }
 

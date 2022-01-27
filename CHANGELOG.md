@@ -26,7 +26,14 @@ Additional labels for pre-release metadata:
 * beta.x: shipped version under testing.
 * rc.x: stable release candidate.
 
-0.2.0 - unreleased
+
+0.2.5 - unreleased
+------------------
+Added
+* dynamic fuel limit
+* boostrap.bin file creation tool
+
+0.2.0 - released skipped
 ------------------
 
 Changed
