@@ -82,12 +82,13 @@ pub fn build_transaction(
     contract: Option<Hash>,
     method: String,
     args: Vec<u8>,
+    fuel_limit: u64,
 ) -> Transaction {
     let nonce = rand::random::<u64>().to_be_bytes().to_vec();
     let data = TransactionDataV1 {
         network,
         account,
-        fuel_limit: 0,
+        fuel_limit,
         nonce,
         contract,
         method,
