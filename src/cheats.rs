@@ -16,17 +16,27 @@
 // along with TRINCI. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{client::Client, common, utils};
+use glob::glob;
+use serde::{Deserialize, Serialize};
 use serde_value::{value, Value};
 use trinci_core::{
-    base::serialize::rmp_serialize,
-    crypto::{Hash, KeyPair},
-    Transaction,
+    base::serialize::{rmp_deserialize, rmp_serialize},
+    crypto::{Hash, Hashable, KeyPair},
+    Message, Transaction,
 };
+#[derive(Serialize, Deserialize)]
+struct Bootstrap {
+    // Binary bootstrap.wasm
+    bin: Vec<u8>,
+    // Vec of transaction for the genesis block
+    txs: Vec<Transaction>,
+}
 
 const CONTRACT_REGISTER: &str = "register";
 const ASSET_TRANSFER: &str = "transfer";
 const ASSET_INIT: &str = "asset-init";
 const SUBSCRIBE: &str = "subscribe";
+const CREATE_BOOTSTRAP: &str = "bootstrap";
 const HELP: &str = "help";
 const QUIT: &str = "quit";
 
@@ -42,6 +52,7 @@ fn help() {
         " * '{}': subscribe to blockchain events (stop with ctrl+c)",
         SUBSCRIBE
     );
+    println!(" * '{}': create a new bootstrap.bin", CREATE_BOOTSTRAP);
     println!(" * '{}': back to main menu", QUIT);
 }
 
@@ -72,6 +83,24 @@ pub fn register_contract_tx(
         service_contract,
         "contract_registration".to_owned(),
         args,
+    )
+}
+
+pub fn create_service_init_tx(
+    caller: &KeyPair,
+    network: String,
+    service_account: String,
+    bin: Vec<u8>,
+) -> Transaction {
+    let hash = bin.primary_hash();
+
+    common::build_transaction(
+        caller,
+        network,
+        service_account,
+        Some(hash),
+        "init".to_owned(),
+        bin,
     )
 }
 
@@ -110,6 +139,81 @@ fn register_contract(client: &mut Client) {
         bin,
     );
     client.put_transaction(tx);
+}
+
+fn load_txs_from_directory(txs: &mut Vec<Transaction>, path: &str) {
+    for entry in glob(&format!("{}/*.bin", path)).expect("Failed to read glob pattern") {
+        match entry {
+            Ok(path) => {
+                let filename = path.clone();
+                let filename = filename.file_name().unwrap().to_str().unwrap();
+
+                if !filename.starts_with('_') {
+                    let mut tx_file = std::fs::File::open(path).unwrap();
+
+                    let mut tx_bin = Vec::new();
+                    std::io::Read::read_to_end(&mut tx_file, &mut tx_bin)
+                        .unwrap_or_else(|_| panic!("Error reading: {:?}", filename));
+
+                    let msg: Message = rmp_deserialize(&tx_bin).unwrap();
+
+                    let tx = match msg {
+                        Message::PutTransactionRequest { confirm: _, tx } => tx,
+                        _ => panic!("Expected put transaction request message"),
+                    };
+
+                    txs.push(tx);
+                    println!("Added tx: {}", filename);
+                }
+            }
+            Err(e) => println!("{:?}", e),
+        }
+    }
+}
+
+fn create_bootstrap(client: &mut Client) {
+    let network_name;
+    let service_account;
+
+    let mut txs = Vec::<Transaction>::new();
+
+    utils::print_unbuf("  Service wasm contract path: ");
+    let service_contract_filename = utils::get_input();
+
+    let bin = std::fs::read(service_contract_filename).unwrap();
+
+    utils::print_unbuf("  Create service init? ");
+    let create_init = utils::get_bool();
+
+    if create_init {
+        utils::print_unbuf("  Network ID: ");
+        network_name = utils::get_input();
+
+        utils::print_unbuf("  Service account: ");
+        service_account = utils::get_input();
+
+        txs.push(create_service_init_tx(
+            &client.keypair,
+            network_name,
+            service_account,
+            bin.clone(),
+        ));
+    }
+
+    utils::print_unbuf("  Load txs from directory? ");
+    let load_txs = utils::get_bool();
+    if load_txs {
+        utils::print_unbuf("  txs path: ");
+        let txs_path = utils::get_input();
+        load_txs_from_directory(&mut txs, &txs_path);
+    }
+
+    let bootstrap = Bootstrap { bin, txs };
+
+    let bootstrap_buf = trinci_core::base::serialize::rmp_serialize(&bootstrap).unwrap();
+
+    std::fs::write("bootstrap.bin", bootstrap_buf).unwrap();
+    println!("Done!\nbootstrap.bin saved.");
 }
 
 fn subscribe(client: &mut Client) {
@@ -240,6 +344,7 @@ pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
             ASSET_TRANSFER => transfer_asset(client),
             CONTRACT_REGISTER => register_contract(client),
             SUBSCRIBE => subscribe(client),
+            CREATE_BOOTSTRAP => create_bootstrap(client),
             QUIT => break,
             HELP => help(),
             _ => {

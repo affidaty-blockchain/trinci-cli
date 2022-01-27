@@ -30,6 +30,17 @@ pub fn get_input() -> String {
     input.trim().to_string()
 }
 
+pub fn get_bool() -> bool {
+    let mut input = String::new();
+    while input != "Y" && input != "N" {
+        println!("  >> Please answer with Y or N: ");
+        input = String::new();
+        stdin().read_line(&mut input).expect("Cannot read stdin");
+        input = input.trim().to_ascii_uppercase();
+    }
+    input == "Y"
+}
+
 pub fn read_hash() -> Option<Hash> {
     loop {
         let input = get_input();
