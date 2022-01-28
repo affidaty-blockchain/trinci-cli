@@ -59,21 +59,21 @@ impl Config {
             .author(clap::crate_authors!())
             .about(clap::crate_description!())
             .arg(
-                Arg::with_name("verbose")
+                Arg::new("verbose")
                     .long("verbose")
-                    .short("v")
+                    .short('v')
                     .help("Print sent and received structures")
                     .required(false),
             )
             .arg(
-                Arg::with_name("batch")
+                Arg::new("batch")
                     .long("batch")
                     .help("Submit the ordered set of transactions specified in the file")
                     .value_name("PATH")
                     .required(false),
             )
             .arg(
-                Arg::with_name("stress")
+                Arg::new("stress")
                     .long("stress")
                     .help(
                         "Run stress test using the specified number of threads (stop with CTRL^C)",
@@ -82,8 +82,8 @@ impl Config {
                     .required(false),
             )
             .arg(
-                Arg::with_name("channel")
-                    .short("c")
+                Arg::new("channel")
+                    .short('c')
                     .long("channel")
                     .help("IO channel (default stdio)")
                     .value_name("CHANNEL")
@@ -91,38 +91,38 @@ impl Config {
                     .possible_values(&["stdio", "file", "http", "bridge"]),
             )
             .arg(
-                Arg::with_name("network")
-                    .short("n")
+                Arg::new("network")
+                    .short('n')
                     .long("network")
                     .help("Blockchain network identifier (default skynet)")
                     .value_name("NETWORK")
                     .required(false),
             )
             .arg(
-                Arg::with_name("host")
-                    .short("h")
+                Arg::new("host")
+                    .short('h')
                     .long("host")
                     .help("Target hostname (default localhost)")
                     .value_name("HOST")
                     .required(false),
             )
             .arg(
-                Arg::with_name("port")
-                    .short("p")
+                Arg::new("port")
+                    .short('p')
                     .long("port")
                     .help("Target port (default 8000)")
                     .value_name("PORT")
                     .required(false),
             )
             .arg(
-                Arg::with_name("path")
+                Arg::new("path")
                     .long("path")
                     .help("API path (default '/api/v1')")
                     .value_name("PATH")
                     .required(false),
             )
             .arg(
-                Arg::with_name("keyfile")
+                Arg::new("keyfile")
                     .long("keyfile")
                     .help("Keypair file (PKCS#8 DER format)")
                     .value_name("PATH")
