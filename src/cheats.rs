@@ -17,6 +17,7 @@
 
 use crate::{client::Client, common, utils};
 use glob::glob;
+use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
 use serde_value::{value, Value};
 use trinci_core::{
@@ -24,12 +25,19 @@ use trinci_core::{
     crypto::{Hash, Hashable, KeyPair},
     Message, Transaction,
 };
+
+/// WARNING: Edit this structure could break the node
+/// This structure should be the same of the Boostrap
+/// struct on the Node
 #[derive(Serialize, Deserialize)]
 struct Bootstrap {
     // Binary bootstrap.wasm
+    #[serde(with = "serde_bytes")]
     bin: Vec<u8>,
     // Vec of transaction for the genesis block
     txs: Vec<Transaction>,
+    // Random string to generate unique file
+    nonce: String,
 }
 
 const CONTRACT_REGISTER: &str = "register";
@@ -181,6 +189,7 @@ fn load_txs_from_directory(txs: &mut Vec<Transaction>, path: &str) {
 fn create_bootstrap(client: &mut Client) {
     let network_name;
     let service_account;
+    let mut nonce = String::from("bootstrap");
 
     let mut txs = Vec::<Transaction>::new();
 
@@ -214,8 +223,18 @@ fn create_bootstrap(client: &mut Client) {
         let txs_path = utils::get_input();
         load_txs_from_directory(&mut txs, &txs_path);
     }
+    utils::print_unbuf("  Create unique bootstrap? ");
+    let unique = utils::get_bool();
+    if unique {
+        nonce = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
+        println!("nonce: {}", nonce);
+    }
 
-    let bootstrap = Bootstrap { bin, txs };
+    let bootstrap = Bootstrap { bin, txs, nonce };
 
     let bootstrap_buf = trinci_core::base::serialize::rmp_serialize(&bootstrap).unwrap();
 
