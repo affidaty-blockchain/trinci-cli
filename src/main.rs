@@ -38,11 +38,7 @@ const BRIDGE_CHANNEL: &str = "bridge";
 fn main() {
     let config = Config::from_args();
 
-    let keypair = match config.keyfile {
-        Some(keyfile) => utils::load_ecdsa_secp384_keypair(&keyfile),
-        None => common::default_keypair(),
-    };
-
+    let keypair = utils::load_keypair(config.keyfile);
     let client = match config.channel.as_str() {
         STDIO_CHANNEL => Client::new_stdio(config.verbose, config.network.clone(), keypair),
         FILE_CHANNEL => Client::new_file(config.verbose, config.network.clone(), keypair),

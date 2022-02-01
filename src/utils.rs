@@ -17,7 +17,9 @@
 
 use serde::Serialize;
 use std::io::{stdin, stdout, Read, Write};
-use trinci_core::crypto::{ecdsa, Hash, KeyPair};
+use trinci_core::crypto::{ecdsa, ed25519, Hash, KeyPair};
+
+use crate::common;
 
 pub fn print_unbuf(string: &str) {
     print!("{}", string);
@@ -127,12 +129,36 @@ pub fn print_serializable<T: Serialize>(val: &T) {
     print_json(json_str);
 }
 
-/// Load node account keypair from PKCS#8 DER file.
-pub fn load_ecdsa_secp384_keypair(keyfile: &str) -> KeyPair {
-    let mut file = std::fs::File::open(keyfile).unwrap();
-    let mut bytes = Vec::new();
-    file.read_to_end(&mut bytes).expect("loading node keypair");
-    let ecdsa_keypair =
-        ecdsa::KeyPair::from_pkcs8_bytes(ecdsa::CurveId::Secp384R1, &bytes).unwrap();
-    KeyPair::Ecdsa(ecdsa_keypair)
+/// Load node account keypair.
+pub fn load_keypair(filename: Option<String>) -> KeyPair {
+    match filename {
+        Some(filename) => {
+            if filename.contains("/tpm") {
+                #[cfg(not(feature = "tpm2"))]
+                panic!(
+                    "TPM2 feature not included, for using tpm2 module compile with feature=tpm2"
+                );
+                #[cfg(feature = "tpm2")]
+                {
+                    let ecdsa =
+                        ecdsa::KeyPair::new_tpm2(ecdsa::CurveId::Secp256R1, filename.as_str())?;
+                    Ok(KeyPair::Ecdsa(ecdsa))
+                }
+            } else {
+                let mut file = std::fs::File::open(&filename)
+                    .unwrap_or_else(|_| panic!("error loading {}", &filename));
+                let mut bytes = Vec::new();
+                file.read_to_end(&mut bytes).expect("loading node keypair");
+                if filename.contains("ecdsa") {
+                    let ecdsa = ecdsa::KeyPair::from_pkcs8_bytes(ecdsa::CurveId::Secp256R1, &bytes)
+                        .unwrap();
+                    KeyPair::Ecdsa(ecdsa)
+                } else {
+                    let ed25519 = ed25519::KeyPair::from_bytes(&bytes).unwrap();
+                    KeyPair::Ed25519(ed25519)
+                }
+            }
+        }
+        None => common::default_keypair(),
+    }
 }
