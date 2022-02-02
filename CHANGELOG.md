@@ -27,7 +27,7 @@ Additional labels for pre-release metadata:
 * rc.x: stable release candidate.
 
 
-0.2.5 - 02-01-2022
+0.2.5 - 02-02-2022
 ------------------
 Added
 * dynamic fuel limit
