@@ -10,7 +10,7 @@ $ cargo run -- --help
 ```
 
 ```bash
-T2 CLI 0.1.6
+T2 CLI 0.2.5
 The Affidaty Team <trinci@affidaty.io>
 
 
@@ -32,7 +32,6 @@ OPTIONS:
     -p, --port <PORT>          Target port (default 8000)
         --stress <threads>     Run stress test using the specified number of threads (stop with CTRL^C)
 
-
 ```
 
 
@@ -42,12 +41,14 @@ If we type `help` int the trinci-cli prompt we can see all the available options
 ```bash
 > help
 Available commands:
- * 'help': pr-nt this help
+ * 'help': print this help
  * 'put-tx': submit a transaction and get ticket
  * 'get-tx <tkt>': get transaction by ticket
  * 'get-rx <tkt>': get receipt by transaction ticket
  * 'get-acc <id>': get account by id
  * 'get-blk <height>': get block at a given height
+ * 'export-txs <file>': export all transactions into a file
+ * 'import-txs <file>': import transactions from a file
  * 'cheats': shortcuts for common tasks
  * 'quit': exit the application
 > 
@@ -63,6 +64,7 @@ In the `cheats` submenu we can find some facilitators for common operations:
  * 'asset-init': initialize asset account
  * 'register': register a contract to the service account
  * 'subscribe': subscribe to blockchain events (stop with ctrl+c)
+ * 'bootstrap': create a new bootstrap.bin
  * 'quit': back to main menu
 >>> 
 ```
@@ -74,7 +76,7 @@ $ cargo run -- --network <network> --channel file
 
 Example:
 ```bash
-$ cargo run -- --network skynet --channel file
+$ cargo run -- --network Qm...yh --channel file
 ```
 
 ```bash
@@ -86,7 +88,7 @@ $ cargo run -- --network skynet --channel file
 ```
 
 ```bash
-  Service account: QmfZy5bvk7a3DQAjCbGNtmrPXWkyVvPrdnZMyBZ5q5ieKG
+  Service account: TRINCI
   Service contract (optional multihash hex string):
   New contract name: vote
   New contract version: 0.1.2
@@ -137,6 +139,46 @@ To execute the batch transactions:
 ```bash
 $ cargo run -- --batch <file.toml> --host <host> --path <path> --port <port> --network <network>
 ```
+
+# Create a new bootstrap.bin
+ - Clone the [trinci-smartcontracts](https://github.com/affidaty-blockchain/trinci-smartcontracts) repository and search for a `service.wasm` file. 
+   You could also modify and rebuild the Service contract that you can find in `trinci-smartcontracts/app-as/service` directory
+ - Launch the `trinci-cli` with a custom keypair, the corrispondent account-id will be used as blockchain admin in the Service account:
+   ```bash
+   $ cargo run -- --keyfile <you_binary_keyfile>
+   ```
+   - Go to the `cheats` submenu
+     - Choose the `bootstrap` option
+       - Insert the `service.wasm` complete path
+         ```bash
+         Service wasm contract path: <path_to_service.wasm>
+         ```
+       - Choose if you want to automatically create the service account init transaction (this will create a "TRINCI" service account)
+         ```bash
+         Create service init?   >> Please answer with Y or N: Y
+         ```
+         - Insert the initial network id, the default value is: `bootstrap`
+         ```bash
+         Network ID: bootstrap
+         ```
+         - Insert the account-id to use as Service Account:
+         ```bash
+         Service account: TRINCI
+         ```
+       - If you have available some binary transaction you can put the into a directory and add the to the `bootstrap.bin`
+         ```bash
+         Load txs from directory?   >> Please answer with Y or N: Y
+         txs path: <path_to_txs_directory>
+         Added tx: register-asset.bin
+         Added tx: init-asset.bin
+         ```
+       - You can decide to create a unique bootstrap (and also a new network starting from the same service.wasm and txs) using a random string as nonce:
+         ```bash
+         Create unique bootstrap?   >> Please answer with Y or N: 
+         nonce: sB0yIl94Ou
+         ```
+  - Now you can find a new `boostrap.bin` file in the trinci-cli directory.
+
 
 # Stress test
 This modality create N threads (where N is the parameter `<threads>` on the command) that perform a
