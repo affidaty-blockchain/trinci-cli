@@ -22,7 +22,7 @@ use serde::{Deserialize, Serialize};
 use serde_value::{value, Value};
 use trinci_core::{
     base::serialize::{rmp_deserialize, rmp_serialize},
-    crypto::{Hash, Hashable, KeyPair},
+    crypto::{Hash, HashAlgorithm, KeyPair},
     Message, Transaction,
 };
 
@@ -102,7 +102,7 @@ pub fn create_service_init_tx(
     service_account: String,
     bin: Vec<u8>,
 ) -> Transaction {
-    let hash = bin.primary_hash();
+    let hash = Hash::from_data(HashAlgorithm::Sha256, &bin);
 
     common::build_transaction(
         caller,
