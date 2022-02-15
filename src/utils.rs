@@ -130,7 +130,7 @@ pub fn print_serializable<T: Serialize>(val: &T) {
 }
 
 /// Load node account keypair.
-pub fn load_keypair(filename: Option<String>) -> KeyPair {
+pub fn load_keypair(filename: Option<String>) -> trinci_core::error::Result<KeyPair> {
     match filename {
         Some(filename) => {
             if filename.contains("/tpm") {
@@ -145,20 +145,23 @@ pub fn load_keypair(filename: Option<String>) -> KeyPair {
                     Ok(KeyPair::Ecdsa(ecdsa))
                 }
             } else {
-                let mut file = std::fs::File::open(&filename)
-                    .unwrap_or_else(|_| panic!("error loading {}", &filename));
+                let mut file = std::fs::File::open(&filename).map_err(|err| {
+                    trinci_core::error::Error::new_ext(trinci_core::ErrorKind::MalformedData, err)
+                })?;
                 let mut bytes = Vec::new();
                 file.read_to_end(&mut bytes).expect("loading node keypair");
                 if filename.contains("ecdsa") {
                     let ecdsa = ecdsa::KeyPair::from_pkcs8_bytes(ecdsa::CurveId::Secp256R1, &bytes)
-                        .unwrap();
-                    KeyPair::Ecdsa(ecdsa)
+                        .or_else(|_| {
+                            ecdsa::KeyPair::from_pkcs8_bytes(ecdsa::CurveId::Secp384R1, &bytes)
+                        })?;
+                    Ok(KeyPair::Ecdsa(ecdsa))
                 } else {
-                    let ed25519 = ed25519::KeyPair::from_bytes(&bytes).unwrap();
-                    KeyPair::Ed25519(ed25519)
+                    let ed25519 = ed25519::KeyPair::from_bytes(&bytes)?;
+                    Ok(KeyPair::Ed25519(ed25519))
                 }
             }
         }
-        None => common::default_keypair(),
+        None => Ok(common::default_keypair()),
     }
 }
