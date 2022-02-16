@@ -33,6 +33,7 @@ lazy_static! {
     pub static ref METHOD_ID: Mutex<String> = Mutex::new("transfer".to_string());
 }
 
+pub const INITIAL_NETWORK_NAME: &str = "bootstrap";
 pub struct AccountInfo {
     pub id: String,
     pub keypair: KeyPair,

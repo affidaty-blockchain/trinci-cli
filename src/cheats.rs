@@ -15,7 +15,11 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with TRINCI. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::{client::Client, common, utils};
+use crate::{
+    client::Client,
+    common::{self, INITIAL_NETWORK_NAME},
+    utils,
+};
 use glob::glob;
 use rand::{distributions::Alphanumeric, Rng};
 use serde::{Deserialize, Serialize};
@@ -23,7 +27,7 @@ use serde_value::{value, Value};
 use trinci_core::{
     base::serialize::{rmp_deserialize, rmp_serialize},
     crypto::{Hash, HashAlgorithm, KeyPair},
-    Message, Transaction,
+    Message, Transaction, SERVICE_ACCOUNT_ID,
 };
 
 /// WARNING: Edit this structure could break the node
@@ -189,7 +193,7 @@ fn load_txs_from_directory(txs: &mut Vec<Transaction>, path: &str) {
 fn create_bootstrap(client: &mut Client) {
     let network_name;
     let service_account;
-    let mut nonce = String::from("bootstrap");
+    let mut nonce = SERVICE_ACCOUNT_ID.to_string();
 
     let mut txs = Vec::<Transaction>::new();
 
@@ -202,11 +206,8 @@ fn create_bootstrap(client: &mut Client) {
     let create_init = utils::get_bool();
 
     if create_init {
-        utils::print_unbuf("  Network ID: ");
-        network_name = utils::get_input();
-
-        utils::print_unbuf("  Service account: ");
-        service_account = utils::get_input();
+        network_name = INITIAL_NETWORK_NAME.to_string();
+        service_account = INITIAL_NETWORK_NAME.to_string();
 
         txs.push(create_service_init_tx(
             &client.keypair,

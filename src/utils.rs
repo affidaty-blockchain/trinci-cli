@@ -34,8 +34,14 @@ pub fn get_input() -> String {
 
 pub fn get_bool() -> bool {
     let mut input = String::new();
+    let mut first = true;
     while input != "Y" && input != "N" {
-        println!("  >> Please answer with Y or N: ");
+        if first {
+            first = false;
+        } else {
+            print!("    >> Please answer with Y or N: ");
+            stdout().flush().unwrap();
+        }
         input = String::new();
         stdin().read_line(&mut input).expect("Cannot read stdin");
         input = input.trim().to_ascii_uppercase();
