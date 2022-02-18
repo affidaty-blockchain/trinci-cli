@@ -207,7 +207,7 @@ fn create_bootstrap(client: &mut Client) {
 
     if create_init {
         network_name = INITIAL_NETWORK_NAME.to_string();
-        service_account = INITIAL_NETWORK_NAME.to_string();
+        service_account = SERVICE_ACCOUNT_ID.to_string();
 
         txs.push(create_service_init_tx(
             &client.keypair,
