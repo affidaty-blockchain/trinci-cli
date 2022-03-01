@@ -61,7 +61,7 @@ In the `cheats` submenu we can find some facilitators for common operations:
 > cheats
  * 'help': print this help
  * 'transfer': transfer an asset to an account
- * 'asset-init': initialize asset account
+ * 'asset-init': initialize a basic asset account
  * 'register': register a contract to the service account
  * 'subscribe': subscribe to blockchain events (stop with ctrl+c)
  * 'bootstrap': create a new bootstrap.bin

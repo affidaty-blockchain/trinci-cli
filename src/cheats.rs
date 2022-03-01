@@ -166,7 +166,9 @@ fn register_contract(client: &mut Client) {
         bin,
         fuel_limit,
     );
-    client.put_transaction(tx);
+    if let Some(hash) = client.put_transaction(tx) {
+        utils::print_serializable(&hash);
+    }
 }
 
 fn load_txs_from_directory(txs: &mut Vec<Transaction>, path: &str) {
@@ -291,14 +293,16 @@ fn transfer_asset(client: &mut Client) {
     utils::print_unbuf("  Asset units: ");
     let units = utils::get_input().parse::<u64>().unwrap_or_default();
 
-    let buf = transfer_asset_tx(
+    let tx = transfer_asset_tx(
         &client.keypair,
         client.network.clone(),
         asset_account,
         destination_account,
         units,
     );
-    client.put_transaction(buf);
+    if let Some(hash) = client.put_transaction(tx) {
+        utils::print_serializable(&hash);
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -351,7 +355,7 @@ fn asset_init(client: &mut Client) {
     utils::print_unbuf("  Asset max mintable units: ");
     let max_units = utils::get_input().parse::<u64>().unwrap_or_default();
 
-    let buf = asset_init_tx(
+    let tx = asset_init_tx(
         &client.keypair,
         client.network.clone(),
         asset_account,
@@ -361,7 +365,9 @@ fn asset_init(client: &mut Client) {
         url,
         max_units,
     );
-    client.put_transaction(buf);
+    if let Some(hash) = client.put_transaction(tx) {
+        utils::print_serializable(&hash);
+    }
 }
 
 pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {

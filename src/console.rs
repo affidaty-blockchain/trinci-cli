@@ -144,7 +144,9 @@ pub fn run(mut client: Client) {
         match command {
             PUT_TX => {
                 let tx = build_transaction_interactive(&client.keypair, &client.network);
-                client.put_transaction_verb(tx);
+                if let Some(hash) = client.put_transaction(tx) {
+                    utils::print_serializable(&hash);
+                }
             }
             GET_TX => {
                 let hash = match splitted.get(1).and_then(|s| Hash::from_hex(s).ok()) {
