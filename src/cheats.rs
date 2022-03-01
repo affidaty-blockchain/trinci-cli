@@ -17,7 +17,7 @@
 
 use crate::{
     client::Client,
-    common::{self, INITIAL_NETWORK_NAME},
+    common::{self, FUEL_LIMIT, INITIAL_NETWORK_NAME},
     utils,
 };
 use glob::glob;
@@ -31,7 +31,7 @@ use trinci_core::{
 };
 
 /// WARNING: Edit this structure could break the node
-/// This structure should be the same of the Boostrap
+/// This structure should be the same of the Bootstrap
 /// struct on the Node
 #[derive(Serialize, Deserialize)]
 struct Bootstrap {
@@ -120,14 +120,23 @@ pub fn create_service_init_tx(
 }
 
 fn register_contract(client: &mut Client) {
-    utils::print_unbuf("  Service account: ");
-    let service_account = utils::get_input();
+    utils::print_unbuf(&format!("  Network [{}]: ", client.network));
+    let mut network = utils::get_input();
+    if network.is_empty() {
+        network = client.network.to_string();
+    }
+
+    utils::print_unbuf(&format!("  Service account [{}]: ", SERVICE_ACCOUNT_ID));
+    let mut service_account = utils::get_input();
+    if service_account.is_empty() {
+        service_account = SERVICE_ACCOUNT_ID.to_string();
+    }
 
     utils::print_unbuf("  Service contract (optional multihash hex string): ");
     let service_contract = utils::read_hash();
 
-    utils::print_unbuf("  Fuel Limit: ");
-    let fuel_limit = utils::get_input().parse::<u64>().unwrap();
+    utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
+    let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
 
     utils::print_unbuf("  New contract name: ");
     let name = utils::get_input();
@@ -147,7 +156,7 @@ fn register_contract(client: &mut Client) {
 
     let tx = register_contract_tx(
         &client.keypair,
-        client.network.clone(),
+        network,
         service_account,
         service_contract,
         name,
@@ -157,7 +166,9 @@ fn register_contract(client: &mut Client) {
         bin,
         fuel_limit,
     );
-    client.put_transaction(tx);
+    if let Some(hash) = client.put_transaction(tx) {
+        utils::print_serializable(&hash);
+    }
 }
 
 fn load_txs_from_directory(txs: &mut Vec<Transaction>, path: &str) {
@@ -282,14 +293,16 @@ fn transfer_asset(client: &mut Client) {
     utils::print_unbuf("  Asset units: ");
     let units = utils::get_input().parse::<u64>().unwrap_or_default();
 
-    let buf = transfer_asset_tx(
+    let tx = transfer_asset_tx(
         &client.keypair,
         client.network.clone(),
         asset_account,
         destination_account,
         units,
     );
-    client.put_transaction(buf);
+    if let Some(hash) = client.put_transaction(tx) {
+        utils::print_serializable(&hash);
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -342,7 +355,7 @@ fn asset_init(client: &mut Client) {
     utils::print_unbuf("  Asset max mintable units: ");
     let max_units = utils::get_input().parse::<u64>().unwrap_or_default();
 
-    let buf = asset_init_tx(
+    let tx = asset_init_tx(
         &client.keypair,
         client.network.clone(),
         asset_account,
@@ -352,7 +365,9 @@ fn asset_init(client: &mut Client) {
         url,
         max_units,
     );
-    client.put_transaction(buf);
+    if let Some(hash) = client.put_transaction(tx) {
+        utils::print_serializable(&hash);
+    }
 }
 
 pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
