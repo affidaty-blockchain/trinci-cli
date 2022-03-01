@@ -143,7 +143,7 @@ $ cargo run -- --batch <file.toml> --host <host> --path <path> --port <port> --n
 # Create a new bootstrap.bin
  - Clone the [trinci-smartcontracts](https://github.com/affidaty-blockchain/trinci-smartcontracts) repository and search for a `service.wasm` file. 
    You could also modify and rebuild the Service contract that you can find in `trinci-smartcontracts/app-as/service` directory
- - Launch the `trinci-cli` with a custom keypair, the corrispondent account-id will be used as blockchain admin in the Service account:
+ - Launch the `trinci-cli` with a custom keypair, the correspondent account-id will be used as blockchain admin in the Service account:
    ```bash
    $ cargo run -- --keyfile <you_binary_keyfile>
    ```
@@ -177,10 +177,10 @@ $ cargo run -- --batch <file.toml> --host <host> --path <path> --port <port> --n
          Create unique bootstrap?   >> Please answer with Y or N: 
          nonce: sB0yIl94Ou
          ```
-  - Now you can find a new `boostrap.bin` file in the trinci-cli directory.
+  - Now you can find a new `bootstrap.bin` file in the trinci-cli directory.
 
 
 # Stress test
 This modality create N threads (where N is the parameter `<threads>` on the command) that perform a
 series of transfer on the targeted blockchain.
-It is used to valutate the node performance.
+It is used to evaluate the node performance.

@@ -15,7 +15,12 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with TRINCI. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::{cheats, client::Client, common::build_transaction, impexp, utils};
+use crate::{
+    cheats,
+    client::Client,
+    common::{build_transaction, FUEL_LIMIT},
+    impexp, utils,
+};
 use trinci_core::{
     crypto::{Hash, KeyPair},
     Transaction,
@@ -54,9 +59,12 @@ fn help() {
     println!(" * '{}': exit the application", QUIT);
 }
 
-fn build_transaction_interactive(caller: &KeyPair) -> Transaction {
-    utils::print_unbuf("  Network: ");
-    let network = utils::get_input();
+fn build_transaction_interactive(caller: &KeyPair, config_network: &str) -> Transaction {
+    utils::print_unbuf(&format!("  Network [{}]: ", config_network));
+    let mut network = utils::get_input();
+    if network.is_empty() {
+        network = config_network.to_string();
+    }
 
     utils::print_unbuf("  Target account: ");
     let target = utils::get_input();
@@ -75,8 +83,8 @@ fn build_transaction_interactive(caller: &KeyPair) -> Transaction {
         }
     };
 
-    utils::print_unbuf("  Fuel Limit: ");
-    let fuel_limit = utils::get_input().parse::<u64>().unwrap();
+    utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
+    let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
 
     utils::print_unbuf("  Method: ");
     let method = utils::get_input();
@@ -135,7 +143,7 @@ pub fn run(mut client: Client) {
 
         match command {
             PUT_TX => {
-                let tx = build_transaction_interactive(&client.keypair);
+                let tx = build_transaction_interactive(&client.keypair, &client.network);
                 client.put_transaction_verb(tx);
             }
             GET_TX => {

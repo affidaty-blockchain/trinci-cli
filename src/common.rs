@@ -34,6 +34,8 @@ lazy_static! {
 }
 
 pub const INITIAL_NETWORK_NAME: &str = "bootstrap";
+pub const FUEL_LIMIT: u64 = 1000;
+
 pub struct AccountInfo {
     pub id: String,
     pub keypair: KeyPair,
