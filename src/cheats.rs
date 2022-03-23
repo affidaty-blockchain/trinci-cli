@@ -16,6 +16,7 @@
 // along with TRINCI. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{
+    cheats_advanced_asset,
     client::Client,
     common::{self, FUEL_LIMIT, INITIAL_NETWORK_NAME},
     utils,
@@ -45,17 +46,14 @@ struct Bootstrap {
 }
 
 const CONTRACT_REGISTER: &str = "register";
-const ASSET_TRANSFER: &str = "transfer";
-const ASSET_INIT: &str = "asset-init";
 const SUBSCRIBE: &str = "subscribe";
+const ADVANCED_ASSET: &str = "adv-asset";
 const CREATE_BOOTSTRAP: &str = "bootstrap";
 const HELP: &str = "help";
 const QUIT: &str = "quit";
 
 fn help() {
     println!(" * '{}': print this help", HELP);
-    println!(" * '{}': transfer an asset to an account", ASSET_TRANSFER);
-    println!(" * '{}': initialize asset account", ASSET_INIT);
     println!(
         " * '{}': register a contract to the service account",
         CONTRACT_REGISTER
@@ -65,6 +63,7 @@ fn help() {
         SUBSCRIBE
     );
     println!(" * '{}': create a new bootstrap.bin", CREATE_BOOTSTRAP);
+    println!(" * '{}': advanced asset cheats", ADVANCED_ASSET);
     println!(" * '{}': back to main menu", QUIT);
 }
 
@@ -283,93 +282,6 @@ pub fn transfer_asset_tx(
     )
 }
 
-fn transfer_asset(client: &mut Client) {
-    utils::print_unbuf("  Asset account: ");
-    let asset_account = utils::get_input();
-
-    utils::print_unbuf("  Destination account: ");
-    let destination_account = utils::get_input();
-
-    utils::print_unbuf("  Asset units: ");
-    let units = utils::get_input().parse::<u64>().unwrap_or_default();
-
-    let tx = transfer_asset_tx(
-        &client.keypair,
-        client.network.clone(),
-        asset_account,
-        destination_account,
-        units,
-    );
-    if let Some(hash) = client.put_transaction(tx) {
-        utils::print_serializable(&hash);
-    }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn asset_init_tx(
-    caller: &KeyPair,
-    network: String,
-    asset_account: String,
-    asset_contract: Option<Hash>,
-    name: String,
-    desc: String,
-    url: String,
-    max_units: u64,
-) -> Transaction {
-    let args = value!({
-        "name": name,
-        "authorized": Vec::<&str>::new(),
-        "description": desc,
-        "url": url,
-        "max_units": max_units
-    });
-    let args = rmp_serialize(&args).unwrap();
-
-    common::build_transaction(
-        caller,
-        network,
-        asset_account,
-        asset_contract,
-        "init".to_owned(),
-        args,
-        1_000_000,
-    )
-}
-
-fn asset_init(client: &mut Client) {
-    utils::print_unbuf("  Asset account: ");
-    let asset_account = utils::get_input();
-
-    utils::print_unbuf("  Asset contract (multihash hex string): ");
-    let asset_contract = utils::read_hash();
-
-    utils::print_unbuf("  Asset name: ");
-    let name = utils::get_input();
-
-    utils::print_unbuf("  Asset description: ");
-    let desc = utils::get_input();
-
-    utils::print_unbuf("  Asset url: ");
-    let url = utils::get_input();
-
-    utils::print_unbuf("  Asset max mintable units: ");
-    let max_units = utils::get_input().parse::<u64>().unwrap_or_default();
-
-    let tx = asset_init_tx(
-        &client.keypair,
-        client.network.clone(),
-        asset_account,
-        asset_contract,
-        name,
-        desc,
-        url,
-        max_units,
-    );
-    if let Some(hash) = client.put_transaction(tx) {
-        utils::print_serializable(&hash);
-    }
-}
-
 pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
     help();
     loop {
@@ -384,13 +296,15 @@ pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
         };
 
         match line.as_str() {
-            ASSET_INIT => asset_init(client),
-            ASSET_TRANSFER => transfer_asset(client),
             CONTRACT_REGISTER => register_contract(client),
             SUBSCRIBE => subscribe(client),
             CREATE_BOOTSTRAP => create_bootstrap(client),
             QUIT => break,
             HELP => help(),
+            ADVANCED_ASSET => {
+                cheats_advanced_asset::run(client, rl);
+                help();
+            }
             _ => {
                 println!("Command not found");
                 help();
