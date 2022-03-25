@@ -10,28 +10,26 @@ $ cargo run -- --help
 ```
 
 ```bash
-T2 CLI 0.2.5
+T2 CLI 0.2.7
 The Affidaty Team <trinci@affidaty.io>
 
-
 USAGE:
-    trinci-cli [FLAGS] [OPTIONS]
-
-FLAGS:
-        --help       Prints help information
-    -V, --version    Prints version information
-    -v, --verbose    Print sent and received structures
+    trinci-cli [OPTIONS]
 
 OPTIONS:
         --batch <PATH>         Submit the ordered set of transactions specified in the file
-    -c, --channel <CHANNEL>    IO channel (default stdio) [possible values: stdio, file, http, bridge]
+    -c, --channel <CHANNEL>    IO channel (default stdio) [possible values: stdio, file, http,
+                               bridge]
     -h, --host <HOST>          Target hostname (default localhost)
+        --help                 Print help information
         --keyfile <PATH>       Keypair file (PKCS#8 DER format)
     -n, --network <NETWORK>    Blockchain network identifier (default skynet)
-        --path <PATH>          API path (default '/api/v1')
     -p, --port <PORT>          Target port (default 8000)
-        --stress <threads>     Run stress test using the specified number of threads (stop with CTRL^C)
-
+        --path <PATH>          API path (default '/api/v1')
+        --stress <threads>     Run stress test using the specified number of threads (stop with
+                               CTRL^C)
+    -v, --verbose              Print sent and received structures
+    -V, --version              Print version information
 ```
 
 
@@ -60,15 +58,25 @@ In the `cheats` submenu we can find some facilitators for common operations:
 ```bash
 > cheats
  * 'help': print this help
- * 'transfer': transfer an asset to an account
- * 'asset-init': initialize a basic asset account
  * 'register': register a contract to the service account
  * 'subscribe': subscribe to blockchain events (stop with ctrl+c)
  * 'bootstrap': create a new bootstrap.bin
+ * 'adv-asset': advanced asset cheats
  * 'quit': back to main menu
 >>> 
 ```
 
+### Cheats: Advanced Asset
+In the `cheats -> adv-asset` submenu we can find facilitators for operation on the advanced asset:
+```bash
+>>> adv-asset
+ @ 'help': print this help
+ @ 'init': initialize the advanced asset in an account
+ @ 'mint': initialize asset account
+ @ 'balance': transfer an asset to an account
+ @ 'transfer': transfer an asset to an account
+ @ 'quit': back to cheats menu
+ ```
 # Create Binary batch transactions
 ```bash
 $ cargo run -- --network <network> --channel file
@@ -184,3 +192,8 @@ $ cargo run -- --batch <file.toml> --host <host> --path <path> --port <port> --n
 This modality create N threads (where N is the parameter `<threads>` on the command) that perform a
 series of transfer on the targeted blockchain.
 It is used to evaluate the node performance.
+
+This procedure is interactive:
+- we can register a new contract for the advanced asset
+- we can initialize the contract on an account
+- we can mint some units on the test accounts
