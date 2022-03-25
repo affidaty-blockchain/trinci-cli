@@ -179,7 +179,13 @@ pub fn run(mut client: Client) {
                 client.get_account_verb(id.to_owned());
             }
             GET_BLOCK => {
-                let height = match splitted.get(1).and_then(|s| s.parse::<u64>().ok()) {
+                let height = match splitted.get(1).and_then(|s| {
+                    if s == &"MAX" {
+                        Some(18446744073709551615)
+                    } else {
+                        s.parse::<u64>().ok()
+                    }
+                }) {
                     Some(height) => height,
                     _ => {
                         println!("Bad input, please provide block (numeric) height");
