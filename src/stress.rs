@@ -22,9 +22,7 @@ use trinci_core::Transaction;
 
 /// Create a random payment transaction between two accounts in the
 /// `ACCOUNTS_INFO` list.
-fn random_pay_tx_get(network: String) -> Transaction {
-    let asset_account = &ACCOUNTS_INFO[0];
-
+fn random_pay_tx_get(network: String, asset_account: String) -> Transaction {
     let mut rng = rand::thread_rng();
     let from = {
         let idx = rng.gen::<usize>() % ACCOUNTS_INFO.len();
@@ -36,31 +34,77 @@ fn random_pay_tx_get(network: String) -> Transaction {
     };
     let units = rng.gen::<u64>() % 20;
 
-    cheats::transfer_asset_tx(
-        &from.keypair,
-        network,
-        asset_account.id.clone(),
-        to.id.clone(),
-        units,
-    )
+    cheats::transfer_asset_tx(&from.keypair, network, asset_account, to.id.clone(), units)
 }
 
-fn stress_worker(mut client: Client) {
+fn stress_worker(mut client: Client, asset_account: String) {
     loop {
-        let tx = random_pay_tx_get(client.network.clone());
+        let tx = random_pay_tx_get(client.network.clone(), asset_account.clone());
         client.put_transaction(tx);
     }
 }
 
-pub fn run(client: Client, threads: u8) {
+pub fn run(mut client: Client, threads: u8) {
     println!("Performing stress test using {} threads", threads);
-    std::thread::sleep(std::time::Duration::from_secs(3));
+
+    // Register advanced Asset contract
+    crate::utils::print_unbuf("Register asset contract [Y/n]? ");
+    let input = crate::utils::get_input().to_lowercase();
+
+    if input.is_empty() || input == "y" || input == "yes" {
+        println!("Register Advanced Asset contract");
+        crate::cheats::register_contract(&mut client);
+    }
+    // Init advanced asset contract on an #Account
+    crate::utils::print_unbuf("Initialize asset contract on an account [Y/n]? ");
+    let input = crate::utils::get_input().to_lowercase();
+
+    let mut asset_account = None;
+
+    if input.is_empty() || input == "y" || input == "yes" {
+        println!("Init Advanced Asset contract");
+        asset_account = crate::cheats_advanced_asset::adv_asset_init(&mut client);
+    } else {
+        let mut input = String::new();
+        while input.is_empty() {
+            crate::utils::print_unbuf("Specify the asset account: ");
+            input = crate::utils::get_input();
+            asset_account = Some(input.clone());
+        }
+    }
+    let asset_account = if let Some(acc) = asset_account {
+        acc
+    } else {
+        String::new()
+    };
+
+    // Mint 10000 units in each of the 3 accounts
+    crate::utils::print_unbuf(&format!("Mint {} on the accounts [Y/n]? ", asset_account));
+    let input = crate::utils::get_input().to_lowercase();
+    if input.is_empty() || input == "y" || input == "yes" {
+        for account_number in 0..=2 {
+            println!(
+                "Mint 10000 {} on account {}",
+                &asset_account, &ACCOUNTS_INFO[account_number].id,
+            );
+            crate::cheats_advanced_asset::adv_asset_mint(
+                &mut client,
+                Some(asset_account.clone()),
+                None,
+                Some((ACCOUNTS_INFO[account_number].id).to_string()),
+                Some(10_000),
+            );
+        }
+    }
+    println!("Waiting 30 secs...");
+    std::thread::sleep(std::time::Duration::from_secs(30));
 
     let mut thread_handlers = vec![];
     for _ in 0..threads {
         let c = client.clone();
+        let asset_acc = asset_account.clone();
         let h = thread::spawn(move || {
-            stress_worker(c);
+            stress_worker(c, asset_acc);
         });
         thread_handlers.push(h);
     }

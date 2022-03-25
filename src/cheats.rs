@@ -118,7 +118,7 @@ pub fn create_service_init_tx(
     )
 }
 
-fn register_contract(client: &mut Client) {
+pub(crate) fn register_contract(client: &mut Client) {
     utils::print_unbuf(&format!("  Network [{}]: ", client.network));
     let mut network = utils::get_input();
     if network.is_empty() {
@@ -309,6 +309,6 @@ pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
                 println!("Command not found");
                 help();
             }
-        }
+        };
     }
 }

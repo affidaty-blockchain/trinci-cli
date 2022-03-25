@@ -52,7 +52,7 @@ fn help() {
     println!(" @ '{}': back to cheats menu", QUIT);
 }
 
-pub fn adv_transfer_asset_tx(
+fn adv_asset_transfer_tx(
     caller: &KeyPair,
     network: String,
     asset_account: String,
@@ -113,7 +113,7 @@ fn adv_asset_init_tx(
     )
 }
 
-fn adv_asset_mint_tx(
+pub fn adv_asset_mint_tx(
     caller: &KeyPair,
     network: String,
     asset_account: String,
@@ -161,7 +161,7 @@ fn adv_asset_balance_tx(
     )
 }
 
-fn adv_asset_init(client: &mut Client) {
+pub fn adv_asset_init(client: &mut Client) -> Option<String> {
     utils::print_unbuf("  Asset account: ");
     let asset_account = utils::get_input();
 
@@ -183,7 +183,7 @@ fn adv_asset_init(client: &mut Client) {
     let tx = adv_asset_init_tx(
         &client.keypair,
         client.network.clone(),
-        asset_account,
+        asset_account.clone(),
         asset_contract,
         name,
         desc,
@@ -195,21 +195,49 @@ fn adv_asset_init(client: &mut Client) {
     );
     if let Some(hash) = client.put_transaction(tx) {
         utils::print_serializable(&hash);
+        return Some(asset_account);
     }
+    None
 }
 
-fn adv_asset_mint(client: &mut Client) {
-    utils::print_unbuf("  Asset account: ");
-    let asset_account = utils::get_input();
+pub fn adv_asset_mint(
+    client: &mut Client,
+    asset_account: Option<String>,
+    asset_contract: Option<Hash>,
+    dest_account: Option<String>,
+    units: Option<u64>,
+) {
+    let asset_account = if let Some(asset_account) = asset_account {
+        asset_account
+    } else {
+        utils::print_unbuf("  Asset account: ");
+        utils::get_input()
+    };
 
-    utils::print_unbuf("  Asset contract (multihash hex string): ");
-    let asset_contract = utils::read_hash();
+    let asset_contract = if let Some(asset_contract) = asset_contract {
+        if asset_contract == Hash::default() {
+            utils::print_unbuf("  Asset contract (multihash hex string): ");
+            utils::read_hash()
+        } else {
+            Some(asset_contract)
+        }
+    } else {
+        None
+    };
 
-    utils::print_unbuf("  Destination account: ");
-    let dest_account = utils::get_input();
+    let dest_account = if let Some(dest_account) = dest_account {
+        dest_account
+    } else {
+        utils::print_unbuf("  Destination account: ");
+        utils::get_input()
+    };
 
-    utils::print_unbuf("  Asset units: ");
-    let units = utils::get_input().parse::<u64>().unwrap_or_default();
+    let units = if let Some(units) = units {
+        units
+    } else {
+        utils::print_unbuf("  Asset units: ");
+        utils::get_input().parse::<u64>().unwrap_or_default()
+    };
 
     let tx = adv_asset_mint_tx(
         &client.keypair,
@@ -261,7 +289,7 @@ fn adv_transfer_asset(client: &mut Client) {
     utils::print_unbuf("  Asset units: ");
     let units = utils::get_input().parse::<u64>().unwrap_or_default();
 
-    let tx = adv_transfer_asset_tx(
+    let tx = adv_asset_transfer_tx(
         &client.keypair,
         client.network.clone(),
         asset_account,
@@ -287,8 +315,10 @@ pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
         };
 
         match line.as_str() {
-            ADV_ASSET_INIT => adv_asset_init(client),
-            ADV_ASSET_MINT => adv_asset_mint(client),
+            ADV_ASSET_INIT => {
+                let _ = adv_asset_init(client);
+            }
+            ADV_ASSET_MINT => adv_asset_mint(client, None, Some(Hash::default()), None, None),
             ADV_ASSET_BALANCE => adv_asset_balance(client),
             ADV_ASSET_TRANSFER => adv_transfer_asset(client),
             QUIT => break,
@@ -297,6 +327,6 @@ pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
                 println!("Command not found");
                 help();
             }
-        }
+        };
     }
 }
