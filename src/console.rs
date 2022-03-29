@@ -18,7 +18,7 @@
 use crate::{
     cheats,
     client::Client,
-    common::{build_transaction, FUEL_LIMIT},
+    common::{build_unit_transaction, FUEL_LIMIT},
     impexp, utils,
 };
 use trinci_core::{
@@ -31,6 +31,7 @@ const HISTORY_FILE: &str = ".history";
 const HELP: &str = "help";
 const QUIT: &str = "quit";
 const PUT_TX: &str = "put-tx";
+const PUT_BULK_TX: &str = "put-bulk-tx";
 const GET_TX: &str = "get-tx";
 const GET_RX: &str = "get-rx";
 const GET_ACCOUNT: &str = "get-acc";
@@ -43,6 +44,10 @@ fn help() {
     println!("Available commands:");
     println!(" * '{}': print this help", HELP);
     println!(" * '{}': submit a transaction and get ticket", PUT_TX);
+    println!(
+        " * '{}': submit a bulk transaction and get ticket",
+        PUT_BULK_TX
+    );
     println!(" * '{} <tkt>': get transaction by ticket", GET_TX);
     println!(" * '{} <tkt>': get receipt by transaction ticket", GET_RX);
     println!(" * '{} <id>': get account by id", GET_ACCOUNT);
@@ -107,7 +112,7 @@ fn build_transaction_interactive(caller: &KeyPair, config_network: &str) -> Tran
         }
     };
 
-    build_transaction(caller, network, target, contract, method, args, fuel_limit)
+    build_unit_transaction(caller, network, target, contract, method, args, fuel_limit)
 }
 
 pub fn run(mut client: Client) {
@@ -147,6 +152,12 @@ pub fn run(mut client: Client) {
                 if let Some(hash) = client.put_transaction(tx) {
                     utils::print_serializable(&hash);
                 }
+            }
+            PUT_BULK_TX => { // TODO
+                 // let tx = build_transaction_interactive(&client.keypair, &client.network);
+                 // if let Some(hash) = client.put_transaction(tx) {
+                 //     utils::print_serializable(&hash);
+                 // }
             }
             GET_TX => {
                 let hash = match splitted.get(1).and_then(|s| Hash::from_hex(s).ok()) {

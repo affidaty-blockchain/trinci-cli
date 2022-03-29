@@ -41,6 +41,7 @@ If we type `help` int the trinci-cli prompt we can see all the available options
 Available commands:
  * 'help': print this help
  * 'put-tx': submit a transaction and get ticket
+ * 'put-bulk-tx': submit a bulk transaction and get ticket
  * 'get-tx <tkt>': get transaction by ticket
  * 'get-rx <tkt>': get receipt by transaction ticket
  * 'get-acc <id>': get account by id

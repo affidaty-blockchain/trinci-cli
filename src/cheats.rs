@@ -88,7 +88,7 @@ pub fn register_contract_tx(
         "bin": Value::Bytes(bin),
     });
     let args = rmp_serialize(&args).unwrap();
-    common::build_transaction(
+    common::build_unit_transaction(
         caller,
         network,
         service_account,
@@ -107,7 +107,7 @@ pub fn create_service_init_tx(
 ) -> Transaction {
     let hash = Hash::from_data(HashAlgorithm::Sha256, &bin);
 
-    common::build_transaction(
+    common::build_unit_transaction(
         caller,
         network,
         service_account,
@@ -271,7 +271,7 @@ pub fn transfer_asset_tx(
     });
     let args = rmp_serialize(&args).unwrap();
 
-    common::build_transaction(
+    common::build_unit_transaction(
         caller,
         network,
         asset_account,

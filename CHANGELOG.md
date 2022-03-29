@@ -43,7 +43,7 @@ Changed
 ------------------
 Added
 * dynamic fuel limit
-* boostrap.bin file creation tool
+* bootstrap.bin file creation tool
 
 0.2.0 - released skipped
 ------------------

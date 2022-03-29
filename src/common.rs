@@ -20,7 +20,10 @@ use std::sync::Mutex;
 use trinci_core::{
     self,
     base::{
-        schema::{SignedTransaction, TransactionData},
+        schema::{
+            BulkTransaction, SignedTransaction, TransactionData, TransactionDataBulkNodeV1,
+            TransactionDataBulkV1, UnsignedTransaction,
+        },
         serialize::MessagePack,
     },
     crypto::Hash,
@@ -81,7 +84,7 @@ pub fn default_keypair() -> KeyPair {
     create_keypair(PUB_KEY1, PVT_KEY1)
 }
 
-pub fn build_transaction(
+pub fn build_unit_transaction(
     caller: &KeyPair,
     network: String,
     account: String,
@@ -105,4 +108,63 @@ pub fn build_transaction(
     let bytes = data.serialize();
     let signature = caller.sign(&bytes).unwrap();
     Transaction::UnitTransaction(SignedTransaction { data, signature })
+}
+
+pub fn build_bulk_transaction() -> Transaction {
+    Transaction::BulkT
+}
+pub fn build_bulk_root_transaction(
+    caller: &KeyPair,
+    network: String,
+    account: String,
+    contract: Option<Hash>,
+    method: String,
+    args: Vec<u8>,
+    fuel_limit: u64,
+) -> UnsignedTransaction {
+    let nonce = rand::random::<u64>().to_be_bytes().to_vec();
+    let data = TransactionDataV1 {
+        network,
+        account,
+        fuel_limit,
+        nonce,
+        contract,
+        method,
+        caller: caller.public_key(),
+        args,
+    };
+    let data = TransactionData::V1(data);
+
+    UnsignedTransaction { data }
+}
+
+pub fn build_bulk_node_transaction(
+    caller: &KeyPair,
+    network: String,
+    account: String,
+    contract: Option<Hash>,
+    method: String,
+    args: Vec<u8>,
+    fuel_limit: u64,
+    hash: Hash,
+) -> BulkTransaction {
+    let nonce = rand::random::<u64>().to_be_bytes().to_vec();
+
+    let data = TransactionDataBulkNodeV1 {
+        account,
+        fuel_limit,
+        nonce,
+        network,
+        contract,
+        method,
+        caller: caller.public_key(),
+        args,
+        depends_on: hash,
+    };
+
+    let data = TransactionData::BulkNodeV1(data);
+    let bytes = data.serialize();
+    let signature = caller.sign(&bytes).unwrap();
+
+    BulkTransaction { data, signature }
 }
