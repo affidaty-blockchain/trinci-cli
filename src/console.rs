@@ -180,7 +180,7 @@ pub fn run(mut client: Client) {
             }
             GET_BLOCK => {
                 let height = match splitted.get(1).and_then(|s| {
-                    if s.to_uppercase() == "MAX".to_string() {
+                    if s.to_uppercase() == *"MAX" {
                         Some(u64::MAX)
                     } else {
                         s.parse::<u64>().ok()
