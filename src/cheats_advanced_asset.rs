@@ -177,8 +177,13 @@ pub fn adv_asset_init(client: &mut Client) -> Option<String> {
     utils::print_unbuf("  Asset url: ");
     let url = utils::get_input();
 
-    utils::print_unbuf("  Asset max mintable units: ");
-    let max_units = utils::get_input().parse::<u64>().unwrap_or_default();
+    utils::print_unbuf("  Asset max mintable units [ <integer> | max ]: ");
+    let max_units = utils::get_input();
+    let max_units = if max_units.to_lowercase() == "max" {
+        u64::MAX
+    } else {
+        max_units.parse::<u64>().unwrap_or_default()
+    };
 
     let tx = adv_asset_init_tx(
         &client.keypair,
