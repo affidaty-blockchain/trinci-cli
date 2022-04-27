@@ -17,7 +17,7 @@
 
 use crate::{cheats, client::Client, common::*};
 use rand::Rng;
-use std::thread;
+use std::{thread, time::Duration};
 use trinci_core::Transaction;
 
 /// Create a random payment transaction between two accounts in the
@@ -37,15 +37,30 @@ fn random_pay_tx_get(network: String, asset_account: String) -> Transaction {
     cheats::transfer_asset_tx(&from.keypair, network, asset_account, to.id.clone(), units)
 }
 
-fn stress_worker(mut client: Client, asset_account: String) {
+fn stress_worker(mut client: Client, asset_account: String, light: bool) {
+    let mut counter = 30;
+    let time_interval = 5;
     loop {
         let tx = random_pay_tx_get(client.network.clone(), asset_account.clone());
         client.put_transaction(tx);
+        if light {
+            counter -= 1;
+            if counter == 0 {
+                thread::sleep(Duration::from_secs(time_interval));
+                counter = 30;
+            }
+        }
     }
 }
 
 pub fn run(mut client: Client, threads: u8) {
-    println!("Performing stress test using {} threads", threads);
+    if threads > 0 {
+        println!("Performing stress test using {} threads", threads);
+    } else {
+        println!("Performing light stress test");
+    }
+
+    let mut waiting_time = 1;
 
     // Register advanced Asset contract
     crate::utils::print_unbuf("Register asset contract [Y/n]? ");
@@ -54,6 +69,7 @@ pub fn run(mut client: Client, threads: u8) {
     if input.is_empty() || input == "y" || input == "yes" {
         println!("Register Advanced Asset contract");
         crate::cheats::register_contract(&mut client);
+        waiting_time += 1;
     }
     // Init advanced asset contract on an #Account
     crate::utils::print_unbuf("Initialize asset contract on an account [Y/n]? ");
@@ -64,6 +80,7 @@ pub fn run(mut client: Client, threads: u8) {
     if input.is_empty() || input == "y" || input == "yes" {
         println!("Init Advanced Asset contract");
         asset_account = crate::cheats_advanced_asset::adv_asset_init(&mut client);
+        waiting_time += 1;
     } else {
         let mut input = String::new();
         while input.is_empty() {
@@ -95,16 +112,22 @@ pub fn run(mut client: Client, threads: u8) {
                 Some(10_000),
             );
         }
+        waiting_time += 1;
     }
-    println!("Waiting 30 secs...");
-    std::thread::sleep(std::time::Duration::from_secs(30));
+    waiting_time *= 7;
+
+    println!("Waiting {} secs...", waiting_time);
+    std::thread::sleep(std::time::Duration::from_secs(waiting_time));
 
     let mut thread_handlers = vec![];
+
+    let (light_stress, threads) = { (threads == 0, if threads == 0 { 1 } else { threads }) };
+
     for _ in 0..threads {
         let c = client.clone();
         let asset_acc = asset_account.clone();
         let h = thread::spawn(move || {
-            stress_worker(c, asset_acc);
+            stress_worker(c, asset_acc, light_stress);
         });
         thread_handlers.push(h);
     }
