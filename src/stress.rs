@@ -59,6 +59,10 @@ pub fn run(mut client: Client, threads: u8) {
     } else {
         println!("Performing light stress test");
     }
+    println!("Accounts:");
+    ACCOUNTS_INFO
+        .iter()
+        .for_each(|acc| println!("Account ID: {}", acc.id));
 
     let mut waiting_time = 1;
 
