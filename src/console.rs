@@ -239,7 +239,7 @@ pub fn run(mut client: Client) {
                 continue;
             }
             CHEATS => {
-                cheats::run(&mut client, &mut rl);
+                cheats::commons::run(&mut client, &mut rl);
                 help();
             }
             QUIT => break,

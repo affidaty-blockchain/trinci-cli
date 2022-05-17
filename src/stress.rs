@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with TRINCI. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::{cheats, client::Client, common::*};
+use crate::{client::Client, common::*};
 use rand::Rng;
 use std::{thread, time::Duration};
 use trinci_core::Transaction;
@@ -34,7 +34,13 @@ fn random_pay_tx_get(network: String, asset_account: String) -> Transaction {
     };
     let units = rng.gen::<u64>() % 20;
 
-    cheats::transfer_asset_tx(&from.keypair, network, asset_account, to.id.clone(), units)
+    crate::cheats::commons::transfer_asset_tx(
+        &from.keypair,
+        network,
+        asset_account,
+        to.id.clone(),
+        units,
+    )
 }
 
 fn stress_worker(mut client: Client, asset_account: String, light: bool) {
@@ -72,7 +78,7 @@ pub fn run(mut client: Client, threads: u8) {
 
     if input.is_empty() || input == "y" || input == "yes" {
         println!("Register Advanced Asset contract");
-        crate::cheats::register_contract(&mut client);
+        crate::cheats::commons::register_contract(&mut client);
         waiting_time += 1;
     }
     // Init advanced asset contract on an #Account
@@ -83,7 +89,7 @@ pub fn run(mut client: Client, threads: u8) {
 
     if input.is_empty() || input == "y" || input == "yes" {
         println!("Init Advanced Asset contract");
-        asset_account = crate::cheats_advanced_asset::adv_asset_init(&mut client);
+        asset_account = crate::cheats::advanced_asset::adv_asset_init(&mut client);
         waiting_time += 1;
     } else {
         let mut input = String::new();
@@ -108,7 +114,7 @@ pub fn run(mut client: Client, threads: u8) {
                 "Mint 10000 {} on account {}",
                 &asset_account, &ACCOUNTS_INFO[account_number].id,
             );
-            crate::cheats_advanced_asset::adv_asset_mint(
+            crate::cheats::advanced_asset::adv_asset_mint(
                 &mut client,
                 Some(asset_account.clone()),
                 None,

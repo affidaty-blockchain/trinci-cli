@@ -19,7 +19,6 @@ use std::process::exit;
 
 mod batch;
 mod cheats;
-mod cheats_advanced_asset;
 mod client;
 mod common;
 mod config;
