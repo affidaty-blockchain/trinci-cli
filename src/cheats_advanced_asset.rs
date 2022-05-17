@@ -28,6 +28,7 @@ use trinci_core::{
 };
 
 const ADV_ASSET_TRANSFER: &str = "transfer";
+const ADV_ASSET_PAY: &str = "pay";
 const ADV_ASSET_INIT: &str = "init";
 const ADV_ASSET_MINT: &str = "mint";
 const ADV_ASSET_BALANCE: &str = "balance";
@@ -49,6 +50,10 @@ fn help() {
         " @ '{}': transfer an asset to an account",
         ADV_ASSET_TRANSFER
     );
+    println!(
+        " @ '{}': transfer an asset to an account (the fee is paid by the caller)",
+        ADV_ASSET_PAY
+    );
     println!(" @ '{}': back to cheats menu", QUIT);
 }
 
@@ -58,6 +63,7 @@ fn adv_asset_transfer_tx(
     asset_account: String,
     to: String,
     units: u64,
+    pay: bool,
 ) -> Transaction {
     let args = serde_value::value!({
         "from": caller.public_key().to_account_id(),
@@ -66,12 +72,14 @@ fn adv_asset_transfer_tx(
     });
     let args = rmp_serialize(&args).unwrap();
 
+    let method = if pay { "pay" } else { "transfer" };
+
     common::build_transaction(
         caller,
         network,
         asset_account,
         None,
-        "transfer".to_owned(),
+        method.to_owned(),
         args,
         1_000_000,
     )
@@ -284,7 +292,7 @@ fn adv_asset_balance(client: &mut Client) {
     }
 }
 
-fn adv_transfer_asset(client: &mut Client) {
+fn adv_transfer_asset(client: &mut Client, pay: bool) {
     utils::print_unbuf("  Asset account: ");
     let asset_account = utils::get_input();
 
@@ -300,6 +308,7 @@ fn adv_transfer_asset(client: &mut Client) {
         asset_account,
         destination_account,
         units,
+        pay,
     );
     if let Some(hash) = client.put_transaction(tx) {
         utils::print_serializable(&hash);
@@ -325,7 +334,8 @@ pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
             }
             ADV_ASSET_MINT => adv_asset_mint(client, None, Some(Hash::default()), None, None),
             ADV_ASSET_BALANCE => adv_asset_balance(client),
-            ADV_ASSET_TRANSFER => adv_transfer_asset(client),
+            ADV_ASSET_TRANSFER => adv_transfer_asset(client, false),
+            ADV_ASSET_PAY => adv_transfer_asset(client, true),
             QUIT => break,
             HELP => help(),
             _ => {
