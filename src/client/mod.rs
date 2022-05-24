@@ -36,6 +36,8 @@ use trinci_core::{
     Account, Block, Message, Receipt, Transaction,
 };
 
+use crate::common::TX_PRINT_ARGS_MAX_SIZE;
+
 #[derive(Clone)]
 pub struct Client {
     pub verbose: bool,
@@ -85,7 +87,7 @@ impl Client {
         Self::new(chan, verbose, network, keypair)
     }
 
-    pub fn put_transaction_verb(&mut self, tx: Transaction) -> Option<Hash> {
+    pub fn _put_transaction_verb(&mut self, tx: Transaction) -> Option<Hash> {
         let prev_verbose = self.verbose;
         self.verbose = true;
         let res = self.put_transaction(tx);
@@ -95,7 +97,27 @@ impl Client {
 
     pub fn put_transaction(&mut self, tx: Transaction) -> Option<Hash> {
         if self.verbose {
-            utils::print_serializable(&tx);
+            let mut printable_tx = tx.clone();
+            let mut previous_args_len = 0;
+            if printable_tx.get_args().len() > TX_PRINT_ARGS_MAX_SIZE {
+                previous_args_len = printable_tx.get_args().len();
+
+                if let Transaction::UnitTransaction(unit_tx) = &mut printable_tx {
+                    match &mut unit_tx.data {
+                        trinci_core::base::schema::TransactionData::V1(tx_data) => {
+                            tx_data.args = tx_data.args[0..TX_PRINT_ARGS_MAX_SIZE].to_vec()
+                        }
+                        _ => panic!("This should not happen!"),
+                    }
+                };
+            }
+            utils::print_serializable(&printable_tx);
+            if previous_args_len > 0 {
+                println!(
+                    "Note: the `args` field is clipped to the first {} bytes of the total {} bytes",
+                    TX_PRINT_ARGS_MAX_SIZE, previous_args_len
+                );
+            }
         }
         match self.put_transaction_err(tx) {
             Ok(hash) => {
@@ -118,12 +140,27 @@ impl Client {
         self.verbose = prev_verbose;
         res
     }
-
     pub fn get_transaction(&mut self, hash: Hash) -> Option<Transaction> {
         match self.get_transaction_err(hash) {
-            Ok(tx) => {
+            Ok(mut tx) => {
                 if self.verbose {
+                    let mut previous_args_len = 0;
+                    if tx.get_args().len() > TX_PRINT_ARGS_MAX_SIZE {
+                        previous_args_len = tx.get_args().len();
+
+                        if let Transaction::UnitTransaction(tx) = &mut tx {
+                            match &mut tx.data {
+                                trinci_core::base::schema::TransactionData::V1(tx) => {
+                                    tx.args = tx.args[0..TX_PRINT_ARGS_MAX_SIZE].to_vec()
+                                }
+                                _ => panic!("This should not happen!"),
+                            }
+                        };
+                    }
                     utils::print_serializable(&tx);
+                    if previous_args_len > 0 {
+                        println!("Note: the `args` field is clipped to the first {} bytes of the total {} bytes",TX_PRINT_ARGS_MAX_SIZE, previous_args_len);
+                    }
                 }
                 Some(tx)
             }
@@ -260,14 +297,17 @@ impl Client {
         &mut self,
         hash: Hash,
     ) -> Result<Transaction, Box<dyn std::error::Error>> {
-        let req = Message::GetTransactionRequest { hash };
+        let req = Message::GetTransactionRequest {
+            hash,
+            destination: None,
+        };
         match self.send_recv(req)? {
-            Message::GetTransactionResponse { tx } => Ok(tx),
+            Message::GetTransactionResponse { tx, origin: _ } => Ok(tx),
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
                 Err(err)
             }
-            res => Err(format!("Unexpected response {:?}", res).into()),
+            res => Err(format!("XXX Unexpected response {:?}", res).into()),
         }
     }
 
@@ -287,9 +327,17 @@ impl Client {
         &mut self,
         height: u64,
     ) -> Result<(Block, Vec<Hash>), Box<dyn std::error::Error>> {
-        let req = Message::GetBlockRequest { height, txs: true };
+        let req = Message::GetBlockRequest {
+            height,
+            txs: true,
+            destination: None,
+        };
         let result = match self.send_recv(req)? {
-            Message::GetBlockResponse { block, txs } => Ok((block, txs.unwrap_or_default())),
+            Message::GetBlockResponse {
+                block,
+                txs,
+                origin: _,
+            } => Ok((block, txs.unwrap_or_default())),
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
                 Err(err)

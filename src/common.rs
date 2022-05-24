@@ -34,6 +34,11 @@ lazy_static! {
 }
 
 pub const INITIAL_NETWORK_NAME: &str = "bootstrap";
+pub const FUEL_LIMIT: u64 = 1000;
+
+/// Max size of the args printable
+pub const TX_PRINT_ARGS_MAX_SIZE: usize = 1000;
+
 pub struct AccountInfo {
     pub id: String,
     pub keypair: KeyPair,

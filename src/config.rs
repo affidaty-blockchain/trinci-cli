@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU Affero General Public License
 // along with TRINCI. If not, see <https://www.gnu.org/licenses/>.
 
-use clap::{App, Arg};
+use clap::{Arg, Command};
 
 const DEFAULT_NETWORK: &str = "skynet";
 const DEFAULT_HOST: &str = "localhost";
@@ -54,7 +54,7 @@ impl Default for Config {
 
 impl Config {
     pub fn from_args() -> Config {
-        let matches = App::new("T2 CLI")
+        let matches = Command::new("T2 CLI")
             .version(clap::crate_version!())
             .author(clap::crate_authors!())
             .about(clap::crate_description!())
@@ -76,7 +76,7 @@ impl Config {
                 Arg::new("stress")
                     .long("stress")
                     .help(
-                        "Run stress test using the specified number of threads (stop with CTRL^C)",
+                        "Run stress test using the specified number of threads (0 -> light mode) (stop with CTRL^C)",
                     )
                     .value_name("threads")
                     .required(false),

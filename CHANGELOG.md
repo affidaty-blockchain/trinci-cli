@@ -26,6 +26,14 @@ Additional labels for pre-release metadata:
 * beta.x: shipped version under testing.
 * rc.x: stable release candidate.
 
+0.2.7 - 24-05-2022
+------------------
+Added
+* Advanced asset cheats facilitator
+
+Changed
+* Stress test with advanced asset
+
 0.2.7-rc1 - 16-02-2022
 ------------------
 Changed

@@ -16,13 +16,13 @@
 // along with TRINCI. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{
+    cheats::Bootstrap,
     client::Client,
-    common::{self, INITIAL_NETWORK_NAME},
+    common::{self, FUEL_LIMIT, INITIAL_NETWORK_NAME},
     utils,
 };
 use glob::glob;
 use rand::{distributions::Alphanumeric, Rng};
-use serde::{Deserialize, Serialize};
 use serde_value::{value, Value};
 use trinci_core::{
     base::serialize::{rmp_deserialize, rmp_serialize},
@@ -30,32 +30,17 @@ use trinci_core::{
     Message, Transaction, SERVICE_ACCOUNT_ID,
 };
 
-/// WARNING: Edit this structure could break the node
-/// This structure should be the same of the Boostrap
-/// struct on the Node
-#[derive(Serialize, Deserialize)]
-struct Bootstrap {
-    // Binary bootstrap.wasm
-    #[serde(with = "serde_bytes")]
-    bin: Vec<u8>,
-    // Vec of transaction for the genesis block
-    txs: Vec<Transaction>,
-    // Random string to generate unique file
-    nonce: String,
-}
+use super::advanced_asset;
 
 const CONTRACT_REGISTER: &str = "register";
-const ASSET_TRANSFER: &str = "transfer";
-const ASSET_INIT: &str = "asset-init";
 const SUBSCRIBE: &str = "subscribe";
+const ADVANCED_ASSET: &str = "adv-asset";
 const CREATE_BOOTSTRAP: &str = "bootstrap";
 const HELP: &str = "help";
 const QUIT: &str = "quit";
 
 fn help() {
     println!(" * '{}': print this help", HELP);
-    println!(" * '{}': transfer an asset to an account", ASSET_TRANSFER);
-    println!(" * '{}': initialize asset account", ASSET_INIT);
     println!(
         " * '{}': register a contract to the service account",
         CONTRACT_REGISTER
@@ -65,6 +50,7 @@ fn help() {
         SUBSCRIBE
     );
     println!(" * '{}': create a new bootstrap.bin", CREATE_BOOTSTRAP);
+    println!(" * '{}': advanced asset cheats", ADVANCED_ASSET);
     println!(" * '{}': back to main menu", QUIT);
 }
 
@@ -119,15 +105,24 @@ pub fn create_service_init_tx(
     )
 }
 
-fn register_contract(client: &mut Client) {
-    utils::print_unbuf("  Service account: ");
-    let service_account = utils::get_input();
+pub(crate) fn register_contract(client: &mut Client) {
+    utils::print_unbuf(&format!("  Network [{}]: ", client.network));
+    let mut network = utils::get_input();
+    if network.is_empty() {
+        network = client.network.to_string();
+    }
+
+    utils::print_unbuf(&format!("  Service account [{}]: ", SERVICE_ACCOUNT_ID));
+    let mut service_account = utils::get_input();
+    if service_account.is_empty() {
+        service_account = SERVICE_ACCOUNT_ID.to_string();
+    }
 
     utils::print_unbuf("  Service contract (optional multihash hex string): ");
     let service_contract = utils::read_hash();
 
-    utils::print_unbuf("  Fuel Limit: ");
-    let fuel_limit = utils::get_input().parse::<u64>().unwrap();
+    utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
+    let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
 
     utils::print_unbuf("  New contract name: ");
     let name = utils::get_input();
@@ -147,7 +142,7 @@ fn register_contract(client: &mut Client) {
 
     let tx = register_contract_tx(
         &client.keypair,
-        client.network.clone(),
+        network,
         service_account,
         service_contract,
         name,
@@ -157,7 +152,9 @@ fn register_contract(client: &mut Client) {
         bin,
         fuel_limit,
     );
-    client.put_transaction(tx);
+    if let Some(hash) = client.put_transaction(tx) {
+        utils::print_serializable(&hash);
+    }
 }
 
 fn load_txs_from_directory(txs: &mut Vec<Transaction>, path: &str) {
@@ -207,7 +204,7 @@ fn create_bootstrap(client: &mut Client) {
 
     if create_init {
         network_name = INITIAL_NETWORK_NAME.to_string();
-        service_account = INITIAL_NETWORK_NAME.to_string();
+        service_account = SERVICE_ACCOUNT_ID.to_string();
 
         txs.push(create_service_init_tx(
             &client.keypair,
@@ -272,89 +269,6 @@ pub fn transfer_asset_tx(
     )
 }
 
-fn transfer_asset(client: &mut Client) {
-    utils::print_unbuf("  Asset account: ");
-    let asset_account = utils::get_input();
-
-    utils::print_unbuf("  Destination account: ");
-    let destination_account = utils::get_input();
-
-    utils::print_unbuf("  Asset units: ");
-    let units = utils::get_input().parse::<u64>().unwrap_or_default();
-
-    let buf = transfer_asset_tx(
-        &client.keypair,
-        client.network.clone(),
-        asset_account,
-        destination_account,
-        units,
-    );
-    client.put_transaction(buf);
-}
-
-#[allow(clippy::too_many_arguments)]
-fn asset_init_tx(
-    caller: &KeyPair,
-    network: String,
-    asset_account: String,
-    asset_contract: Option<Hash>,
-    name: String,
-    desc: String,
-    url: String,
-    max_units: u64,
-) -> Transaction {
-    let args = value!({
-        "name": name,
-        "authorized": Vec::<&str>::new(),
-        "description": desc,
-        "url": url,
-        "max_units": max_units
-    });
-    let args = rmp_serialize(&args).unwrap();
-
-    common::build_transaction(
-        caller,
-        network,
-        asset_account,
-        asset_contract,
-        "init".to_owned(),
-        args,
-        1_000_000,
-    )
-}
-
-fn asset_init(client: &mut Client) {
-    utils::print_unbuf("  Asset account: ");
-    let asset_account = utils::get_input();
-
-    utils::print_unbuf("  Asset contract (multihash hex string): ");
-    let asset_contract = utils::read_hash();
-
-    utils::print_unbuf("  Asset name: ");
-    let name = utils::get_input();
-
-    utils::print_unbuf("  Asset description: ");
-    let desc = utils::get_input();
-
-    utils::print_unbuf("  Asset url: ");
-    let url = utils::get_input();
-
-    utils::print_unbuf("  Asset max mintable units: ");
-    let max_units = utils::get_input().parse::<u64>().unwrap_or_default();
-
-    let buf = asset_init_tx(
-        &client.keypair,
-        client.network.clone(),
-        asset_account,
-        asset_contract,
-        name,
-        desc,
-        url,
-        max_units,
-    );
-    client.put_transaction(buf);
-}
-
 pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
     help();
     loop {
@@ -369,17 +283,19 @@ pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
         };
 
         match line.as_str() {
-            ASSET_INIT => asset_init(client),
-            ASSET_TRANSFER => transfer_asset(client),
             CONTRACT_REGISTER => register_contract(client),
             SUBSCRIBE => subscribe(client),
             CREATE_BOOTSTRAP => create_bootstrap(client),
             QUIT => break,
             HELP => help(),
+            ADVANCED_ASSET => {
+                advanced_asset::run(client, rl);
+                help();
+            }
             _ => {
                 println!("Command not found");
                 help();
             }
-        }
+        };
     }
 }
