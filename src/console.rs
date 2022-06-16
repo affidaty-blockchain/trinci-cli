@@ -18,11 +18,15 @@
 use crate::{
     cheats,
     client::Client,
-    common::{build_unit_transaction, FUEL_LIMIT},
+    common::{
+        self, build_bulk_transaction, build_unit_transaction, get_args_from_user,
+        get_contract_from_user, FUEL_LIMIT,
+    },
     impexp, utils,
 };
 use trinci_core::{
-    crypto::{Hash, KeyPair},
+    base::schema::{SignedTransaction, UnsignedTransaction},
+    crypto::{ecdsa, Hash, Hashable, KeyPair},
     Transaction,
 };
 
@@ -79,19 +83,7 @@ fn build_transaction_interactive(caller: &KeyPair, config_network: &str) -> Tran
     utils::print_unbuf("  Target account: ");
     let target = utils::get_input();
 
-    utils::print_unbuf("  Contract (optional hex string): ");
-    let input = utils::get_input();
-    let contract = if input.is_empty() {
-        None
-    } else {
-        match Hash::from_hex(&input) {
-            Ok(hash) => Some(hash),
-            Err(_err) => {
-                eprintln!("  Invalid contract format (using null)");
-                None
-            }
-        }
-    };
+    let contract = get_contract_from_user();
 
     utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
     let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
@@ -99,25 +91,113 @@ fn build_transaction_interactive(caller: &KeyPair, config_network: &str) -> Tran
     utils::print_unbuf("  Method: ");
     let method = utils::get_input();
 
-    utils::print_unbuf("  Args (hex string)\n\tuse `path:<fullpath>` to load args from file: ");
-
-    let input_args = utils::get_input();
-
-    let args = if input_args.starts_with("path:") {
-        let filename = input_args.replace("path:", "");
-        let mut bootstrap_file = std::fs::File::open(filename).expect("bootstrap file not found");
-
-        let mut buf = Vec::new();
-        std::io::Read::read_to_end(&mut bootstrap_file, &mut buf).expect("loading bootstrap");
-        buf
-    } else {
-        match hex::decode(&input_args) {
-            Ok(buf) => buf,
-            Err(err) => panic!("Error: {}", err),
-        }
-    };
+    let args = get_args_from_user();
 
     build_unit_transaction(caller, network, target, contract, method, args, fuel_limit)
+}
+
+fn build_bulk_root_transaction_interactive(
+    empty_root: bool,
+    caller: &KeyPair,
+    network: String,
+) -> UnsignedTransaction {
+    utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
+    let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
+
+    let (target_account, contract, method, args) = if empty_root {
+        (None, None, None, None)
+    } else {
+        utils::print_unbuf("  Target account: ");
+        let target_account = utils::get_input();
+
+        let contract = get_contract_from_user();
+
+        utils::print_unbuf("  Method: ");
+        let method = utils::get_input();
+
+        let args = get_args_from_user();
+
+        (Some(target_account), contract, Some(method), Some(args))
+    };
+
+    common::build_bulk_root_transaction(
+        empty_root,
+        caller,
+        network,
+        fuel_limit,
+        target_account,
+        contract,
+        method,
+        args,
+    )
+}
+
+fn build_bulk_node_transaction_interactive(network: String, depends_on: Hash) -> SignedTransaction {
+    utils::print_unbuf("  Caller Keypair : "); // TODO show a list of the callers [account-id] or load from the filesystem
+
+    // FIXME
+    const PUB_KEY2: &str = "04755974cec8051cd19adb9f6a5daea99c768418a84f6a8e1a3c17e20b863b5e3372af75fdb1164288bcc6a85f54a781f0ad533dd722cf28437dfe763cf4d5e9ff2a862518609a0b41ba46dd6f3b9f03e4815047b5ffe2a03d1f4e6f42b2dbcca1";
+    const PVT_KEY2: &str = "4007db25c582d39d9912ef6095d9064bcb6b84211cf570b5dd95a10545dde27707ff4042708eae0f357b5c8bcbbfbddb";
+
+    let pub_key = hex::decode(PUB_KEY2).unwrap();
+    let pvt_key = hex::decode(PVT_KEY2).unwrap();
+
+    let ecdsa_keypair = ecdsa::KeyPair::new(ecdsa::CurveId::Secp384R1, &pvt_key, &pub_key).unwrap();
+    let caller = KeyPair::Ecdsa(ecdsa_keypair);
+
+    utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
+    let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
+
+    utils::print_unbuf("  Target account: ");
+    let target_account = utils::get_input();
+
+    let contract = get_contract_from_user();
+
+    utils::print_unbuf("  Method: ");
+    let method = utils::get_input();
+
+    let args = get_args_from_user();
+
+    common::build_bulk_node_transaction(
+        &caller,
+        network,
+        target_account,
+        contract,
+        method,
+        args,
+        fuel_limit,
+        depends_on,
+    )
+}
+
+// TODO
+fn build_bulk_transaction_interactive(caller: &KeyPair, config_network: &str) -> Transaction {
+    utils::print_unbuf(&format!(" Do you want an empty root tx? [y/N]"));
+    let input = utils::get_input().to_lowercase();
+    let empty_root = if !input.is_empty() && input != "n" && input != "no" {
+        false
+    } else {
+        true
+    };
+
+    utils::print_unbuf(&format!(" How many node transaction do you want to add?"));
+    let input = utils::get_input();
+    let node_tx_no = input.parse::<u64>().unwrap_or_default();
+
+    utils::print_unbuf(&format!("  Network [{}]: ", config_network));
+    let mut network = utils::get_input();
+    if network.is_empty() {
+        network = config_network.to_string();
+    }
+
+    let root_tx = build_bulk_root_transaction_interactive(empty_root, caller, network.clone());
+
+    let depends_on = root_tx.data.primary_hash();
+
+    // TODO add more transaction
+    let node_tx = build_bulk_node_transaction_interactive(network, depends_on);
+
+    build_bulk_transaction(caller, root_tx, vec![node_tx])
 }
 
 pub fn run(mut client: Client) {
@@ -158,11 +238,12 @@ pub fn run(mut client: Client) {
                     utils::print_serializable(&hash);
                 }
             }
-            PUT_BULK_TX => { // TODO
-                 // let tx = build_transaction_interactive(&client.keypair, &client.network);
-                 // if let Some(hash) = client.put_transaction(tx) {
-                 //     utils::print_serializable(&hash);
-                 // }
+            PUT_BULK_TX => {
+                // TODO
+                let tx = build_bulk_transaction_interactive(&client.keypair, &client.network);
+                if let Some(hash) = client.put_transaction(tx) {
+                    utils::print_serializable(&hash);
+                }
             }
             GET_TX => {
                 let hash = match splitted.get(1).and_then(|s| Hash::from_hex(s).ok()) {

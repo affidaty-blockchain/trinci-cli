@@ -21,8 +21,8 @@ use trinci_core::{
     self,
     base::{
         schema::{
-            BulkTransaction, EmptyTransactionDataV1, SignedTransaction, TransactionData,
-            TransactionDataBulkNodeV1, TransactionDataBulkV1, UnsignedTransaction,
+            BulkTransaction, BulkTransactions, EmptyTransactionDataV1, SignedTransaction,
+            TransactionData, TransactionDataBulkNodeV1, TransactionDataBulkV1, UnsignedTransaction,
         },
         serialize::MessagePack,
     },
@@ -30,6 +30,8 @@ use trinci_core::{
     crypto::{ecdsa, KeyPair},
     Transaction, TransactionDataV1,
 };
+
+use crate::utils;
 
 lazy_static! {
     pub static ref CONTRACT_ID: Mutex<Option<Hash>> = Mutex::new(None);
@@ -110,6 +112,42 @@ pub fn build_unit_transaction(
     Transaction::UnitTransaction(SignedTransaction { data, signature })
 }
 
+pub fn get_args_from_user() -> Vec<u8> {
+    utils::print_unbuf("  Args (hex string)\n\tuse `path:<fullpath>` to load args from file: ");
+
+    let input_args = utils::get_input();
+
+    if input_args.starts_with("path:") {
+        let filename = input_args.replace("path:", "");
+        let mut bootstrap_file = std::fs::File::open(filename).expect("bootstrap file not found");
+
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut bootstrap_file, &mut buf).expect("loading bootstrap");
+        buf
+    } else {
+        match hex::decode(&input_args) {
+            Ok(buf) => buf,
+            Err(err) => panic!("Error: {}", err),
+        }
+    }
+}
+
+pub fn get_contract_from_user() -> Option<Hash> {
+    utils::print_unbuf("  Contract (optional hex string): ");
+    let input = utils::get_input();
+    if input.is_empty() {
+        None
+    } else {
+        match Hash::from_hex(&input) {
+            Ok(hash) => Some(hash),
+            Err(_err) => {
+                eprintln!("  Invalid contract format (using null)");
+                None
+            }
+        }
+    }
+}
+
 // pub fn build_bulk_transaction() -> Transaction {
 //     Transaction::BulkT
 // }
@@ -156,8 +194,8 @@ pub fn build_bulk_node_transaction(
     method: String,
     args: Vec<u8>,
     fuel_limit: u64,
-    hash: Hash,
-) -> BulkTransaction {
+    depends_on: Hash,
+) -> SignedTransaction {
     let nonce = rand::random::<u64>().to_be_bytes().to_vec();
 
     let data = TransactionDataBulkNodeV1 {
@@ -169,12 +207,30 @@ pub fn build_bulk_node_transaction(
         method,
         caller: caller.public_key(),
         args,
-        depends_on: hash,
+        depends_on,
     };
 
     let data = TransactionData::BulkNodeV1(data);
     let bytes = data.serialize();
     let signature = caller.sign(&bytes).unwrap();
 
-    BulkTransaction { data, signature }
+    SignedTransaction { data, signature }
+}
+
+pub fn build_bulk_transaction(
+    caller: &KeyPair,
+    root: UnsignedTransaction,
+    txs: Vec<SignedTransaction>,
+) -> Transaction {
+    let data = TransactionData::BulkV1(TransactionDataBulkV1 {
+        txs: BulkTransactions {
+            root: Box::new(root),
+            nodes: Some(txs),
+        },
+    });
+
+    let bytes = data.serialize();
+    let signature = caller.sign(&bytes).unwrap();
+
+    Transaction::BulkTransaction(BulkTransaction { data, signature })
 }
