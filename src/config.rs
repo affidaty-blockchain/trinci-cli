@@ -76,7 +76,7 @@ impl Config {
                 Arg::new("stress")
                     .long("stress")
                     .help(
-                        "Run stress test using the specified number of threads (stop with CTRL^C)",
+                        "Run stress test using the specified number of threads (0 -> light mode) (stop with CTRL^C)",
                     )
                     .value_name("threads")
                     .required(false),

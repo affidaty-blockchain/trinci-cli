@@ -21,8 +21,8 @@ use trinci_core::{
     self,
     base::{
         schema::{
-            BulkTransaction, SignedTransaction, TransactionData, TransactionDataBulkNodeV1,
-            TransactionDataBulkV1, UnsignedTransaction,
+            BulkTransaction, EmptyTransactionDataV1, SignedTransaction, TransactionData,
+            TransactionDataBulkNodeV1, TransactionDataBulkV1, UnsignedTransaction,
         },
         serialize::MessagePack,
     },
@@ -110,30 +110,40 @@ pub fn build_unit_transaction(
     Transaction::UnitTransaction(SignedTransaction { data, signature })
 }
 
-pub fn build_bulk_transaction() -> Transaction {
-    Transaction::BulkT
-}
+// pub fn build_bulk_transaction() -> Transaction {
+//     Transaction::BulkT
+// }
+
 pub fn build_bulk_root_transaction(
+    empty_root: bool,
     caller: &KeyPair,
     network: String,
-    account: String,
-    contract: Option<Hash>,
-    method: String,
-    args: Vec<u8>,
     fuel_limit: u64,
+    account: Option<String>,
+    contract: Option<Hash>,
+    method: Option<String>,
+    args: Option<Vec<u8>>,
 ) -> UnsignedTransaction {
     let nonce = rand::random::<u64>().to_be_bytes().to_vec();
-    let data = TransactionDataV1 {
-        network,
-        account,
-        fuel_limit,
-        nonce,
-        contract,
-        method,
-        caller: caller.public_key(),
-        args,
+    let data = if empty_root {
+        TransactionData::BulkEmpyRoot(EmptyTransactionDataV1 {
+            fuel_limit,
+            nonce,
+            network,
+            caller: caller.public_key(),
+        })
+    } else {
+        TransactionData::V1(TransactionDataV1 {
+            network,
+            account: account.unwrap(),
+            fuel_limit,
+            nonce,
+            contract,
+            method: method.unwrap(),
+            caller: caller.public_key(),
+            args: args.unwrap(),
+        })
     };
-    let data = TransactionData::V1(data);
 
     UnsignedTransaction { data }
 }

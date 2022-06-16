@@ -16,14 +16,13 @@
 // along with TRINCI. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::{
-    cheats_advanced_asset,
+    cheats::Bootstrap,
     client::Client,
     common::{self, FUEL_LIMIT, INITIAL_NETWORK_NAME},
     utils,
 };
 use glob::glob;
 use rand::{distributions::Alphanumeric, Rng};
-use serde::{Deserialize, Serialize};
 use serde_value::{value, Value};
 use trinci_core::{
     base::serialize::{rmp_deserialize, rmp_serialize},
@@ -31,19 +30,7 @@ use trinci_core::{
     Message, Transaction, SERVICE_ACCOUNT_ID,
 };
 
-/// WARNING: Edit this structure could break the node
-/// This structure should be the same of the Bootstrap
-/// struct on the Node
-#[derive(Serialize, Deserialize)]
-struct Bootstrap {
-    // Binary bootstrap.wasm
-    #[serde(with = "serde_bytes")]
-    bin: Vec<u8>,
-    // Vec of transaction for the genesis block
-    txs: Vec<Transaction>,
-    // Random string to generate unique file
-    nonce: String,
-}
+use super::advanced_asset;
 
 const CONTRACT_REGISTER: &str = "register";
 const SUBSCRIBE: &str = "subscribe";
@@ -302,7 +289,7 @@ pub fn run(client: &mut Client, rl: &mut rustyline::Editor<()>) {
             QUIT => break,
             HELP => help(),
             ADVANCED_ASSET => {
-                cheats_advanced_asset::run(client, rl);
+                advanced_asset::run(client, rl);
                 help();
             }
             _ => {

@@ -297,14 +297,17 @@ impl Client {
         &mut self,
         hash: Hash,
     ) -> Result<Transaction, Box<dyn std::error::Error>> {
-        let req = Message::GetTransactionRequest { hash };
+        let req = Message::GetTransactionRequest {
+            hash,
+            destination: None,
+        };
         match self.send_recv(req)? {
-            Message::GetTransactionResponse { tx } => Ok(tx),
+            Message::GetTransactionResponse { tx, origin: _ } => Ok(tx),
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
                 Err(err)
             }
-            res => Err(format!("Unexpected response {:?}", res).into()),
+            res => Err(format!("XXX Unexpected response {:?}", res).into()),
         }
     }
 
@@ -324,9 +327,17 @@ impl Client {
         &mut self,
         height: u64,
     ) -> Result<(Block, Vec<Hash>), Box<dyn std::error::Error>> {
-        let req = Message::GetBlockRequest { height, txs: true };
+        let req = Message::GetBlockRequest {
+            height,
+            txs: true,
+            destination: None,
+        };
         let result = match self.send_recv(req)? {
-            Message::GetBlockResponse { block, txs } => Ok((block, txs.unwrap_or_default())),
+            Message::GetBlockResponse {
+                block,
+                txs,
+                origin: _,
+            } => Ok((block, txs.unwrap_or_default())),
             Message::Exception(err) => {
                 let err: Box<dyn std::error::Error> = Box::new(err);
                 Err(err)

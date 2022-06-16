@@ -36,6 +36,7 @@ const GET_TX: &str = "get-tx";
 const GET_RX: &str = "get-rx";
 const GET_ACCOUNT: &str = "get-acc";
 const GET_BLOCK: &str = "get-blk";
+const GET_TXS: &str = "get-txs";
 const EXPORT_TXS: &str = "export-txs";
 const IMPORT_TXS: &str = "import-txs";
 const CHEATS: &str = "cheats";
@@ -51,7 +52,11 @@ fn help() {
     println!(" * '{} <tkt>': get transaction by ticket", GET_TX);
     println!(" * '{} <tkt>': get receipt by transaction ticket", GET_RX);
     println!(" * '{} <id>': get account by id", GET_ACCOUNT);
-    println!(" * '{} <height>': get block at a given height", GET_BLOCK);
+    println!(
+        " * '{} <height>': get block at a given height (use `max` for the last)",
+        GET_BLOCK
+    );
+    println!(" * '{}': get the number of transactions executed", GET_TXS);
     println!(
         " * '{} <file>': export all transactions into a file",
         EXPORT_TXS
@@ -191,8 +196,8 @@ pub fn run(mut client: Client) {
             }
             GET_BLOCK => {
                 let height = match splitted.get(1).and_then(|s| {
-                    if s == &"MAX" {
-                        Some(18446744073709551615)
+                    if s.to_uppercase() == *"MAX" {
+                        Some(u64::MAX)
                     } else {
                         s.parse::<u64>().ok()
                     }
@@ -204,6 +209,21 @@ pub fn run(mut client: Client) {
                     }
                 };
                 client.get_block_verb(height);
+            }
+            GET_TXS => {
+                let (height, mut counter) = match client.get_block(u64::MAX) {
+                    Some((blk, txs)) => (blk.data.height, txs.len()),
+                    None => {
+                        println!("There are no transactions");
+                        continue;
+                    }
+                };
+                for i in 0..height {
+                    if let Some((_, txs)) = client.get_block(i) {
+                        counter += txs.len();
+                    };
+                }
+                println!("Executed Transactions: {}", counter);
             }
             EXPORT_TXS => {
                 let _file_name = match splitted.get(1) {
@@ -230,7 +250,7 @@ pub fn run(mut client: Client) {
                 continue;
             }
             CHEATS => {
-                cheats::run(&mut client, &mut rl);
+                cheats::commons::run(&mut client, &mut rl);
                 help();
             }
             QUIT => break,
