@@ -26,7 +26,13 @@ Additional labels for pre-release metadata:
 * beta.x: shipped version under testing.
 * rc.x: stable release candidate.
 
-0.2.7 - unreleased
+0.2.8 - unreleased
+------------------
+
+Added
+* Bulk transaction functionality
+
+0.2.7 - 24-05-2022
 ------------------
 Added
 * Advanced asset cheats facilitator
@@ -43,7 +49,7 @@ Changed
 ------------------
 Added
 * dynamic fuel limit
-* bootstrap.bin file creation tool
+* boostrap.bin file creation tool
 
 0.2.0 - released skipped
 ------------------
