@@ -18,11 +18,15 @@
 use crate::{
     cheats,
     client::Client,
-    common::{build_transaction, FUEL_LIMIT},
+    common::{
+        self, build_bulk_transaction, build_unit_transaction, get_args_from_user,
+        get_contract_from_user, FUEL_LIMIT,
+    },
     impexp, utils,
 };
 use trinci_core::{
-    crypto::{Hash, KeyPair},
+    base::schema::{SignedTransaction, UnsignedTransaction},
+    crypto::{Hash, Hashable, KeyPair},
     Transaction,
 };
 
@@ -31,6 +35,7 @@ const HISTORY_FILE: &str = ".history";
 const HELP: &str = "help";
 const QUIT: &str = "quit";
 const PUT_TX: &str = "put-tx";
+const PUT_BULK_TX: &str = "put-bulk-tx";
 const GET_TX: &str = "get-tx";
 const GET_RX: &str = "get-rx";
 const GET_ACCOUNT: &str = "get-acc";
@@ -44,6 +49,10 @@ fn help() {
     println!("Available commands:");
     println!(" * '{}': print this help", HELP);
     println!(" * '{}': submit a transaction and get ticket", PUT_TX);
+    println!(
+        " * '{}': submit a bulk transaction and get ticket",
+        PUT_BULK_TX
+    );
     println!(" * '{} <tkt>': get transaction by ticket", GET_TX);
     println!(" * '{} <tkt>': get receipt by transaction ticket", GET_RX);
     println!(" * '{} <id>': get account by id", GET_ACCOUNT);
@@ -74,19 +83,7 @@ fn build_transaction_interactive(caller: &KeyPair, config_network: &str) -> Tran
     utils::print_unbuf("  Target account: ");
     let target = utils::get_input();
 
-    utils::print_unbuf("  Contract (optional hex string): ");
-    let input = utils::get_input();
-    let contract = if input.is_empty() {
-        None
-    } else {
-        match Hash::from_hex(&input) {
-            Ok(hash) => Some(hash),
-            Err(_err) => {
-                eprintln!("  Invalid contract format (using null)");
-                None
-            }
-        }
-    };
+    let contract = get_contract_from_user();
 
     utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
     let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
@@ -94,25 +91,118 @@ fn build_transaction_interactive(caller: &KeyPair, config_network: &str) -> Tran
     utils::print_unbuf("  Method: ");
     let method = utils::get_input();
 
-    utils::print_unbuf("  Args (hex string)\n\tuse `path:<fullpath>` to load args from file: ");
+    let args = get_args_from_user();
 
-    let input_args = utils::get_input();
+    build_unit_transaction(caller, network, target, contract, method, args, fuel_limit)
+}
 
-    let args = if input_args.starts_with("path:") {
-        let filename = input_args.replace("path:", "");
-        let mut bootstrap_file = std::fs::File::open(filename).expect("bootstrap file not found");
+fn build_bulk_root_transaction_interactive(
+    empty_root: bool,
+    caller: &KeyPair,
+    network: String,
+) -> UnsignedTransaction {
+    println!("  >> Prepare Root Transaction");
 
-        let mut buf = Vec::new();
-        std::io::Read::read_to_end(&mut bootstrap_file, &mut buf).expect("loading bootstrap");
-        buf
+    utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
+    let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
+
+    let (target_account, contract, method, args) = if empty_root {
+        (None, None, None, None)
     } else {
-        match hex::decode(&input_args) {
-            Ok(buf) => buf,
-            Err(err) => panic!("Error: {}", err),
-        }
+        utils::print_unbuf("  Target account: ");
+        let target_account = utils::get_input();
+
+        let contract = get_contract_from_user();
+
+        utils::print_unbuf("  Method: ");
+        let method = utils::get_input();
+
+        let args = get_args_from_user();
+
+        (Some(target_account), contract, Some(method), Some(args))
     };
 
-    build_transaction(caller, network, target, contract, method, args, fuel_limit)
+    common::build_bulk_root_transaction(
+        empty_root,
+        caller,
+        network,
+        fuel_limit,
+        target_account,
+        contract,
+        method,
+        args,
+    )
+}
+
+fn build_bulk_node_transaction_interactive(
+    index: u64,
+    network: String,
+    depends_on: Hash,
+) -> SignedTransaction {
+    println!("  >> Prepare Node Transaction {}", index + 1);
+
+    utils::print_unbuf("  Caller Keypair : ");
+    let caller_keypair_filename = utils::get_input();
+    let caller = utils::load_keypair(Some(caller_keypair_filename)).unwrap();
+
+    utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
+    let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
+
+    utils::print_unbuf("  Target account: ");
+    let target_account = utils::get_input();
+
+    let contract = get_contract_from_user();
+
+    utils::print_unbuf("  Method: ");
+    let method = utils::get_input();
+
+    let args = get_args_from_user();
+
+    common::build_bulk_node_transaction(
+        &caller,
+        network,
+        target_account,
+        contract,
+        method,
+        args,
+        fuel_limit,
+        depends_on,
+    )
+}
+
+fn build_bulk_transaction_interactive(caller: &KeyPair, config_network: &str) -> Transaction {
+    utils::print_unbuf(&format!("  Network [{}]: ", config_network));
+    let mut network = utils::get_input();
+    if network.is_empty() {
+        network = config_network.to_string();
+    }
+
+    utils::print_unbuf("  Do you want send an empty root tx? [y/N]: ");
+    let input = utils::get_input().to_lowercase();
+    let empty_root = !(input.is_empty() || input == "n" || input == "no");
+
+    utils::print_unbuf("  How many node transaction do you want to add? [1]: ");
+    let input = utils::get_input();
+    let node_tx_no = input.parse::<u64>().unwrap_or(1);
+
+    let root_tx = build_bulk_root_transaction_interactive(empty_root, caller, network.clone());
+
+    let depends_on = root_tx.data.primary_hash();
+
+    let nodes = if node_tx_no == 0 {
+        None
+    } else {
+        Some(
+            (0..node_tx_no)
+                .into_iter()
+                .map(|index| {
+                    build_bulk_node_transaction_interactive(index, network.clone(), depends_on)
+                })
+                .collect::<Vec<SignedTransaction>>(),
+        )
+    };
+
+    build_bulk_transaction(caller, root_tx, nodes)
 }
 
 pub fn run(mut client: Client) {
@@ -149,6 +239,12 @@ pub fn run(mut client: Client) {
         match command {
             PUT_TX => {
                 let tx = build_transaction_interactive(&client.keypair, &client.network);
+                if let Some(hash) = client.put_transaction(tx) {
+                    utils::print_serializable(&hash);
+                }
+            }
+            PUT_BULK_TX => {
+                let tx = build_bulk_transaction_interactive(&client.keypair, &client.network);
                 if let Some(hash) = client.put_transaction(tx) {
                     utils::print_serializable(&hash);
                 }

@@ -73,8 +73,7 @@ fn adv_asset_transfer_tx(
     let args = rmp_serialize(&args).unwrap();
 
     let method = if pay { "pay" } else { "transfer" };
-
-    common::build_transaction(
+    common::build_unit_transaction(
         caller,
         network,
         asset_account,
@@ -110,7 +109,7 @@ fn adv_asset_init_tx(
     });
     let args = rmp_serialize(&args).unwrap();
 
-    common::build_transaction(
+    common::build_unit_transaction(
         caller,
         network,
         asset_account,
@@ -135,7 +134,7 @@ pub fn adv_asset_mint_tx(
     });
     let args = rmp_serialize(&args).unwrap();
 
-    common::build_transaction(
+    common::build_unit_transaction(
         caller,
         network,
         asset_account,
@@ -158,7 +157,7 @@ fn adv_asset_balance_tx(
         None => vec![],
     };
 
-    common::build_transaction(
+    common::build_unit_transaction(
         caller,
         network,
         asset_account,
