@@ -218,12 +218,12 @@ pub fn build_bulk_node_transaction(
 pub fn build_bulk_transaction(
     caller: &KeyPair,
     root: UnsignedTransaction,
-    txs: Vec<SignedTransaction>,
+    nodes: Option<Vec<SignedTransaction>>,
 ) -> Transaction {
     let data = TransactionData::BulkV1(TransactionDataBulkV1 {
         txs: BulkTransactions {
             root: Box::new(root),
-            nodes: Some(txs),
+            nodes,
         },
     });
 

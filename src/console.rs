@@ -181,23 +181,26 @@ fn build_bulk_transaction_interactive(caller: &KeyPair, config_network: &str) ->
     let input = utils::get_input().to_lowercase();
     let empty_root = !(input.is_empty() || input == "n" || input == "no");
 
-    utils::print_unbuf("  How many node transaction do you want to add?: ");
+    utils::print_unbuf("  How many node transaction do you want to add? [1]: ");
     let input = utils::get_input();
-    let node_tx_no = input.parse::<u64>().unwrap_or_default();
+    let node_tx_no = input.parse::<u64>().unwrap_or(1);
 
     let root_tx = build_bulk_root_transaction_interactive(empty_root, caller, network.clone());
 
     let depends_on = root_tx.data.primary_hash();
 
-    let mut nodes = Vec::<SignedTransaction>::new();
-
-    for index in 0..node_tx_no {
-        nodes.push(build_bulk_node_transaction_interactive(
-            index,
-            network.clone(),
-            depends_on,
-        ));
-    }
+    let nodes = if node_tx_no == 0 {
+        None
+    } else {
+        Some(
+            (0..node_tx_no)
+                .into_iter()
+                .map(|index| {
+                    build_bulk_node_transaction_interactive(index, network.clone(), depends_on)
+                })
+                .collect::<Vec<SignedTransaction>>(),
+        )
+    };
 
     build_bulk_transaction(caller, root_tx, nodes)
 }
