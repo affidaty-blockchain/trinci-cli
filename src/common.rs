@@ -148,10 +148,7 @@ pub fn get_contract_from_user() -> Option<Hash> {
     }
 }
 
-// pub fn build_bulk_transaction() -> Transaction {
-//     Transaction::BulkT
-// }
-
+#[allow(clippy::too_many_arguments)]
 pub fn build_bulk_root_transaction(
     empty_root: bool,
     caller: &KeyPair,
@@ -171,7 +168,7 @@ pub fn build_bulk_root_transaction(
             caller: caller.public_key(),
         })
     } else {
-        TransactionData::V1(TransactionDataV1 {
+        TransactionData::BulkRootV1(TransactionDataV1 {
             network,
             account: account.unwrap(),
             fuel_limit,
@@ -186,6 +183,7 @@ pub fn build_bulk_root_transaction(
     UnsignedTransaction { data }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn build_bulk_node_transaction(
     caller: &KeyPair,
     network: String,

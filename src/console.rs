@@ -26,7 +26,7 @@ use crate::{
 };
 use trinci_core::{
     base::schema::{SignedTransaction, UnsignedTransaction},
-    crypto::{ecdsa, Hash, Hashable, KeyPair},
+    crypto::{Hash, Hashable, KeyPair},
     Transaction,
 };
 
@@ -101,6 +101,8 @@ fn build_bulk_root_transaction_interactive(
     caller: &KeyPair,
     network: String,
 ) -> UnsignedTransaction {
+    println!("  >> Prepare Root Transaction");
+
     utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
     let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
 
@@ -132,18 +134,16 @@ fn build_bulk_root_transaction_interactive(
     )
 }
 
-fn build_bulk_node_transaction_interactive(network: String, depends_on: Hash) -> SignedTransaction {
-    utils::print_unbuf("  Caller Keypair : "); // TODO show a list of the callers [account-id] or load from the filesystem
+fn build_bulk_node_transaction_interactive(
+    index: u64,
+    network: String,
+    depends_on: Hash,
+) -> SignedTransaction {
+    println!("  >> Prepare Node Transaction {}", index + 1);
 
-    // FIXME
-    const PUB_KEY2: &str = "04755974cec8051cd19adb9f6a5daea99c768418a84f6a8e1a3c17e20b863b5e3372af75fdb1164288bcc6a85f54a781f0ad533dd722cf28437dfe763cf4d5e9ff2a862518609a0b41ba46dd6f3b9f03e4815047b5ffe2a03d1f4e6f42b2dbcca1";
-    const PVT_KEY2: &str = "4007db25c582d39d9912ef6095d9064bcb6b84211cf570b5dd95a10545dde27707ff4042708eae0f357b5c8bcbbfbddb";
-
-    let pub_key = hex::decode(PUB_KEY2).unwrap();
-    let pvt_key = hex::decode(PVT_KEY2).unwrap();
-
-    let ecdsa_keypair = ecdsa::KeyPair::new(ecdsa::CurveId::Secp384R1, &pvt_key, &pub_key).unwrap();
-    let caller = KeyPair::Ecdsa(ecdsa_keypair);
+    utils::print_unbuf("  Caller Keypair : ");
+    let caller_keypair_filename = utils::get_input();
+    let caller = utils::load_keypair(Some(caller_keypair_filename)).unwrap();
 
     utils::print_unbuf(&format!("  Fuel Limit [{}]: ", FUEL_LIMIT));
     let fuel_limit = utils::get_input().parse::<u64>().unwrap_or(FUEL_LIMIT);
@@ -170,34 +170,36 @@ fn build_bulk_node_transaction_interactive(network: String, depends_on: Hash) ->
     )
 }
 
-// TODO
 fn build_bulk_transaction_interactive(caller: &KeyPair, config_network: &str) -> Transaction {
-    utils::print_unbuf(&format!(" Do you want an empty root tx? [y/N]"));
-    let input = utils::get_input().to_lowercase();
-    let empty_root = if !input.is_empty() && input != "n" && input != "no" {
-        false
-    } else {
-        true
-    };
-
-    utils::print_unbuf(&format!(" How many node transaction do you want to add?"));
-    let input = utils::get_input();
-    let node_tx_no = input.parse::<u64>().unwrap_or_default();
-
     utils::print_unbuf(&format!("  Network [{}]: ", config_network));
     let mut network = utils::get_input();
     if network.is_empty() {
         network = config_network.to_string();
     }
 
+    utils::print_unbuf("  Do you want send an empty root tx? [y/N]: ");
+    let input = utils::get_input().to_lowercase();
+    let empty_root = !(input.is_empty() || input == "n" || input == "no");
+
+    utils::print_unbuf("  How many node transaction do you want to add?: ");
+    let input = utils::get_input();
+    let node_tx_no = input.parse::<u64>().unwrap_or_default();
+
     let root_tx = build_bulk_root_transaction_interactive(empty_root, caller, network.clone());
 
     let depends_on = root_tx.data.primary_hash();
 
-    // TODO add more transaction
-    let node_tx = build_bulk_node_transaction_interactive(network, depends_on);
+    let mut nodes = Vec::<SignedTransaction>::new();
 
-    build_bulk_transaction(caller, root_tx, vec![node_tx])
+    for index in 0..node_tx_no {
+        nodes.push(build_bulk_node_transaction_interactive(
+            index,
+            network.clone(),
+            depends_on,
+        ));
+    }
+
+    build_bulk_transaction(caller, root_tx, nodes)
 }
 
 pub fn run(mut client: Client) {
@@ -239,7 +241,6 @@ pub fn run(mut client: Client) {
                 }
             }
             PUT_BULK_TX => {
-                // TODO
                 let tx = build_bulk_transaction_interactive(&client.keypair, &client.network);
                 if let Some(hash) = client.put_transaction(tx) {
                     utils::print_serializable(&hash);
