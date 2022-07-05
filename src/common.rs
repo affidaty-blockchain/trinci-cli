@@ -20,13 +20,18 @@ use std::sync::Mutex;
 use trinci_core::{
     self,
     base::{
-        schema::{SignedTransaction, TransactionData},
+        schema::{
+            BulkTransaction, BulkTransactions, EmptyTransactionDataV1, SignedTransaction,
+            TransactionData, TransactionDataBulkNodeV1, TransactionDataBulkV1, UnsignedTransaction,
+        },
         serialize::MessagePack,
     },
     crypto::Hash,
     crypto::{ecdsa, KeyPair},
     Transaction, TransactionDataV1,
 };
+
+use crate::utils;
 
 lazy_static! {
     pub static ref CONTRACT_ID: Mutex<Option<Hash>> = Mutex::new(None);
@@ -81,7 +86,7 @@ pub fn default_keypair() -> KeyPair {
     create_keypair(PUB_KEY1, PVT_KEY1)
 }
 
-pub fn build_transaction(
+pub fn build_unit_transaction(
     caller: &KeyPair,
     network: String,
     account: String,
@@ -105,4 +110,125 @@ pub fn build_transaction(
     let bytes = data.serialize();
     let signature = caller.sign(&bytes).unwrap();
     Transaction::UnitTransaction(SignedTransaction { data, signature })
+}
+
+pub fn get_args_from_user() -> Vec<u8> {
+    utils::print_unbuf("  Args (hex string)\n\tuse `path:<fullpath>` to load args from file: ");
+
+    let input_args = utils::get_input();
+
+    if input_args.starts_with("path:") {
+        let filename = input_args.replace("path:", "");
+        let mut bootstrap_file = std::fs::File::open(filename).expect("bootstrap file not found");
+
+        let mut buf = Vec::new();
+        std::io::Read::read_to_end(&mut bootstrap_file, &mut buf).expect("loading bootstrap");
+        buf
+    } else {
+        match hex::decode(&input_args) {
+            Ok(buf) => buf,
+            Err(err) => panic!("Error: {}", err),
+        }
+    }
+}
+
+pub fn get_contract_from_user() -> Option<Hash> {
+    utils::print_unbuf("  Contract (optional hex string): ");
+    let input = utils::get_input();
+    if input.is_empty() {
+        None
+    } else {
+        match Hash::from_hex(&input) {
+            Ok(hash) => Some(hash),
+            Err(_err) => {
+                eprintln!("  Invalid contract format (using null)");
+                None
+            }
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn build_bulk_root_transaction(
+    empty_root: bool,
+    caller: &KeyPair,
+    network: String,
+    fuel_limit: u64,
+    account: Option<String>,
+    contract: Option<Hash>,
+    method: Option<String>,
+    args: Option<Vec<u8>>,
+) -> UnsignedTransaction {
+    let nonce = rand::random::<u64>().to_be_bytes().to_vec();
+    let data = if empty_root {
+        TransactionData::BulkEmpyRoot(EmptyTransactionDataV1 {
+            fuel_limit,
+            nonce,
+            network,
+            caller: caller.public_key(),
+        })
+    } else {
+        TransactionData::BulkRootV1(TransactionDataV1 {
+            network,
+            account: account.unwrap(),
+            fuel_limit,
+            nonce,
+            contract,
+            method: method.unwrap(),
+            caller: caller.public_key(),
+            args: args.unwrap(),
+        })
+    };
+
+    UnsignedTransaction { data }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn build_bulk_node_transaction(
+    caller: &KeyPair,
+    network: String,
+    account: String,
+    contract: Option<Hash>,
+    method: String,
+    args: Vec<u8>,
+    fuel_limit: u64,
+    depends_on: Hash,
+) -> SignedTransaction {
+    let nonce = rand::random::<u64>().to_be_bytes().to_vec();
+
+    let data = TransactionDataBulkNodeV1 {
+        account,
+        fuel_limit,
+        nonce,
+        network,
+        contract,
+        method,
+        caller: caller.public_key(),
+        args,
+        depends_on,
+    };
+
+    let data = TransactionData::BulkNodeV1(data);
+    let bytes = data.serialize();
+    let signature = caller.sign(&bytes).unwrap();
+
+    SignedTransaction { data, signature }
+}
+
+pub fn build_bulk_transaction(
+    caller: &KeyPair,
+    root: UnsignedTransaction,
+    nodes: Option<Vec<SignedTransaction>>,
+) -> Transaction {
+    let data = TransactionData::BulkV1(TransactionDataBulkV1 {
+        txs: BulkTransactions {
+            root: Box::new(root),
+            nodes,
+        },
+    });
+
+    let bytes = data.serialize();
+    let signature = caller.sign(&bytes).unwrap();
+
+    Transaction::BulkTransaction(BulkTransaction { data, signature })
 }
